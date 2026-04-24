@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="VotePath AI – Understand the election process step-by-step with intelligent guidance." />
+  <title>VotePath AI – Election Process Assistant</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <!-- Skip-to-content for keyboard users -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- ── HEADER ─────────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <div class="logo">
+        <span class="logo-icon" aria-hidden="true">🗳️</span>
+        <span class="logo-text">VotePath <strong>AI</strong></span>
+      </div>
+      <p class="tagline">Understand the election process, step-by-step</p>
+    </div>
+  </header>
+
+  <!-- ── MAIN ───────────────────────────────────────────────── -->
+  <main class="container" id="main-content">
+
+    <!-- Hero / Input -->
+    <section class="hero" aria-label="Ask a question">
+      <h1 class="hero-title">How can we help you vote?</h1>
+      <p class="hero-sub">Ask anything about voter registration, documents, polling day, and more.</p>
+
+      <form class="input-form" id="questionForm" novalidate>
+        <div class="input-wrap">
+          <label for="questionInput" class="sr-only">Your election question</label>
+          <input
+            type="text"
+            id="questionInput"
+            class="question-input"
+            placeholder="e.g. How do I register to vote?"
+            maxlength="500"
+            autocomplete="off"
+            aria-label="Ask your election question"
+            aria-describedby="inputHint"
+          />
+          <button type="submit" class="btn-primary" id="submitBtn" aria-label="Get guidance on your question">
+            <span class="btn-text">Get Guidance</span>
+            <span class="btn-icon" aria-hidden="true">→</span>
+          </button>
+        </div>
+        <p class="input-hint" id="inputHint">Try: "I am 18, what should I do?" · "What documents are required?" · "Where do I vote?"</p>
+      </form>
+    </section>
+
+    <!-- Quick Action Buttons -->
+    <section class="quick-actions" aria-label="Quick topic shortcuts">
+      <p class="quick-label" id="quick-label">Quick topics</p>
+      <div class="quick-grid" role="list" aria-labelledby="quick-label">
+        <button class="quick-btn" role="listitem" data-query="I am voting for the first time, what should I do?" aria-label="First-Time Voter guidance">
+          <span class="quick-icon" aria-hidden="true">🌟</span>First-Time Voter
+        </button>
+        <button class="quick-btn" role="listitem" data-query="How do I register to vote?" aria-label="Voter Registration guidance">
+          <span class="quick-icon" aria-hidden="true">📋</span>Registration
+        </button>
+        <button class="quick-btn" role="listitem" data-query="What documents do I need to vote?" aria-label="Required Documents guidance">
+          <span class="quick-icon" aria-hidden="true">🪪</span>Documents
+        </button>
+        <button class="quick-btn" role="listitem" data-query="How do I correct my voter registration details?" aria-label="Voter Registration Correction guidance">
+          <span class="quick-icon" aria-hidden="true">✏️</span>Correction
+        </button>
+        <button class="quick-btn" role="listitem" data-query="How do I check my voter registration status?" aria-label="Registration Status Check guidance">
+          <span class="quick-icon" aria-hidden="true">🔍</span>Status Check
+        </button>
+        <button class="quick-btn" role="listitem" data-query="What happens on polling day and where do I vote?" aria-label="Polling Day guidance">
+          <span class="quick-icon" aria-hidden="true">📍</span>Polling Day
+        </button>
+        <button class="quick-btn" role="listitem" data-query="What are the important election dates and deadlines?" aria-label="Election Timeline guidance">
+          <span class="quick-icon" aria-hidden="true">📅</span>Timeline
+        </button>
+        <button class="quick-btn" role="listitem" data-query="I have a general question about voting" aria-label="Frequently Asked Questions">
+          <span class="quick-icon" aria-hidden="true">💬</span>FAQ
+        </button>
+      </div>
+    </section>
+
+    <!-- Loading State -->
+    <div class="loading-state hidden" id="loadingState" role="status" aria-live="polite" aria-label="Loading response">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Thinking…</p>
+    </div>
+
+    <!-- Error State -->
+    <div class="error-state hidden" id="errorState" role="alert" aria-live="assertive">
+      <span class="error-icon" aria-hidden="true">⚠️</span>
+      <p id="errorMessage">Something went wrong. Please try again.</p>
+    </div>
+
+    <!-- Response Card -->
+    <section class="response-card hidden" id="responseCard" aria-label="Guidance response" aria-live="polite">
+
+      <!-- Category badge + title -->
+      <div class="card-header">
+        <span class="category-badge" id="categoryBadge"></span>
+        <h2 class="card-title" id="cardTitle"></h2>
+      </div>
+
+      <!-- Overview -->
+      <div class="card-section" id="overviewSection">
+        <p class="overview-text" id="overviewText"></p>
+      </div>
+
+      <!-- Steps -->
+      <div class="card-section" id="stepsSection">
+        <h3 class="section-heading">
+          <span class="section-icon" aria-hidden="true">📌</span> Steps to Follow
+        </h3>
+        <ol class="steps-list" id="stepsList"></ol>
+      </div>
+
+      <!-- Documents -->
+      <div class="card-section" id="documentsSection">
+        <h3 class="section-heading">
+          <span class="section-icon" aria-hidden="true">🪪</span> Required Documents
+        </h3>
+        <ul class="docs-list" id="documentsList"></ul>
+      </div>
+
+      <!-- Tips -->
+      <div class="card-section" id="tipsSection">
+        <h3 class="section-heading">
+          <span class="section-icon" aria-hidden="true">💡</span> Helpful Tips
+        </h3>
+        <ul class="tips-list" id="tipsList"></ul>
+      </div>
+
+      <!-- Next Action -->
+      <div class="next-action" id="nextActionSection">
+        <span class="next-label">Next Step</span>
+        <p class="next-text" id="nextActionText"></p>
+      </div>
+
+      <!-- Metadata strip -->
+      <div class="meta-strip" id="metaStrip" aria-label="Response metadata">
+        <span class="meta-item" id="metaConfidence" title="Detection confidence"></span>
+        <span class="meta-sep" aria-hidden="true">·</span>
+        <span class="meta-item" id="metaSource" title="Content source"></span>
+        <span class="meta-sep" aria-hidden="true">·</span>
+        <span class="meta-item" id="metaCache" title="Cache status"></span>
+        <span class="meta-sep" aria-hidden="true">·</span>
+        <span class="meta-item meta-reason" id="metaReason" title="Confidence reasoning"></span>
+      </div>
+
+    </section>
+
+    <!-- Ask Another -->
+    <div class="ask-another hidden" id="askAnother">
+      <button class="btn-secondary" id="askAnotherBtn" aria-label="Clear response and ask another question">Ask Another Question</button>
+    </div>
+
+  </main>
+
+  <!-- ── FOOTER ─────────────────────────────────────────────── -->
+  <footer class="site-footer">
+    <div class="container">
+      <p>VotePath AI · Rule-based election guidance · Powered by Google Cloud Run</p>
+    </div>
+  </footer>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
