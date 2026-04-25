@@ -506,6 +506,20 @@ main { flex: 1; padding: 40px 0 60px; display: flex; flex-direction: column; gap
   color: var(--text-light);
 }
 
+.footer-inner { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+
+.gcp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--blue-bg);
+  color: var(--blue);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 500;
+}
+
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 600px) {
   .hero { padding: 28px 20px; }

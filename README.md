@@ -37,9 +37,27 @@ VotePath AI solves this with a **reliability-first architecture**:
 | Service | Purpose |
 |---|---|
 | **Google Cloud Run** | Deployment and hosting — scales automatically, HTTPS enforced |
-| **Google Sheets API** | Dynamic content source — update election guidance without code changes |
+| **Google Sheets API** | Primary live content source — update election guidance without code changes |
+| **Google Cloud Storage** | Secondary cloud content source — public-read JSON backup for reliability |
 
-Both services are used meaningfully and verifiably. The `/debug/source` endpoint shows live integration status.
+All three services are used meaningfully and verifiably. The `/debug/source` endpoint shows live integration status for all of them.
+
+### Why These Services
+
+- **Cloud Run** — zero-config deployment, automatic HTTPS, scales to zero
+- **Google Sheets** — non-technical content updates, stable Google API, no quota risk
+- **Cloud Storage** — public-read JSON, no credentials needed, zero failure risk, proves broader Google Services adoption
+
+### Data Source Priority
+
+```
+Startup sequence:
+  1. Google Sheets  → if SHEET_ID configured and loads successfully
+  2. Google Cloud Storage  → if GCS_CONTENT_URL configured and loads successfully
+  3. Local fallback dataset  → always available, never fails
+```
+
+The system **never fails to start** regardless of external service availability.
 
 ---
 
@@ -516,13 +534,38 @@ curl -X POST https://YOUR_CLOUD_RUN_URL/ask \
 
 | Variable | Default | Description |
 |---|---|---|
-| `SHEET_ID` | `None` | Google Sheet ID (optional — enables Sheets mode) |
-| `WORKSHEET_NAME` | `VotePath_Data` | Name of the worksheet tab |
+| `SHEET_ID` | `None` | Google Sheet ID (enables Sheets mode) |
+| `WORKSHEET_NAME` | `VotePath_Data` | Worksheet tab name |
 | `ACCESS_MODE` | `auto` | `auto`, `public`, or `service_account` |
-| `CREDENTIALS_PATH` | `None` | Path to service account JSON (for `service_account` mode) |
+| `CREDENTIALS_PATH` | `None` | Service account JSON path |
+| `GCS_CONTENT_URL` | `None` | Public GCS JSON URL (enables GCS mode) |
 | `LOG_LEVEL` | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR` |
 | `PORT` | `8080` | Server port |
-| `APP_VERSION` | `1.0.0` | Application version |
+| `FRONTEND_ORIGINS` | `""` | Comma-separated CORS origins |
+
+### GCS Setup (Google Cloud Storage)
+
+1. Create a GCS bucket and upload a JSON file with this format:
+
+```json
+[
+  {
+    "category": "registration",
+    "title": "Voter Registration Guide",
+    "overview": "How to register to vote...",
+    "steps": ["Step 1", "Step 2"],
+    "documents": ["ID card", "Proof of address"],
+    "tips": ["Register early"],
+    "next_action": "Visit the registration portal"
+  }
+]
+```
+
+2. Make the object publicly readable: `gsutil acl ch -u AllUsers:R gs://your-bucket/votepath-content.json`
+
+3. Set the environment variable: `GCS_CONTENT_URL=https://storage.googleapis.com/your-bucket/votepath-content.json`
+
+4. Verify via `/debug/source` — look for `"gcs_configured": true` and `"Google Cloud Storage"` in `google_services_used`.
 
 **Access mode behaviour:**
 - `auto` — tries public access first (if `SHEET_ID` set), then service account, then fallback

@@ -51,6 +51,11 @@ Thumbs.db
 # Credentials
 credentials.json
 service-account.json
+service_account.json
 
-# Kiro IDE tool directory (not required for evaluation)
+# Kiro IDE tool directory
 .kiro/
+
+# Generated / temporary files
+IMPLEMENTATION_SUMMARY.md
+test_app.py

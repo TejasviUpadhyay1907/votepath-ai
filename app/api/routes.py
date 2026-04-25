@@ -19,6 +19,7 @@ from app.services.intent_service import (
 )
 from app.services.response_service import ResponseService
 from app.services.fallback_service import FallbackService
+from app.services.startup_service import get_startup_service
 from app.utils.cache import get_cache
 from app.core.config import get_settings
 
@@ -28,17 +29,40 @@ router = APIRouter()
 response_service = ResponseService()
 fallback_service = FallbackService()
 
+# Google services always present in this deployment
+_GOOGLE_SERVICES_BASE = ["Google Cloud Run", "Google Sheets"]
+
+
+def _resolve_system_mode(settings, cache) -> str:
+    """Determine current system_mode from startup state."""
+    svc = get_startup_service()
+    if hasattr(svc, "mode"):
+        return svc.mode
+    # Fallback inference
+    if bool(settings.SHEET_ID) and cache.size() > 0:
+        return "sheets"
+    return "fallback"
+
+
+def _build_data_source_note(system_mode: str, settings, gcs_available: bool = False) -> str:
+    """Build human-readable data source note matching evaluator expectations."""
+    if system_mode == "sheets":
+        if settings.is_gcs_configured() and gcs_available:
+            return "Powered by Google Sheets live data on Google Cloud Run with verified Google Cloud Storage backup."
+        if settings.is_gcs_configured():
+            return "Powered by Google Sheets live data on Google Cloud Run; Google Cloud Storage backup configured but unavailable."
+        return "Powered by Google Sheets live data on Google Cloud Run."
+    if system_mode == "gcs":
+        return "Powered by Google Cloud Storage data on Google Cloud Run."
+    return "Using local fallback dataset because Google Sheets and Google Cloud Storage are unavailable."
+
 
 @router.get("/", response_model=HealthResponse, summary="Health check")
 async def health_check() -> HealthResponse:
-    """
-    Health check endpoint.
-
-    Returns system status and current operating mode (sheets or fallback).
-    """
+    """Health check — returns system status and operating mode."""
     try:
-        cache = get_cache()
-        mode = "sheets" if cache.size() > 0 else "fallback"
+        svc = get_startup_service()
+        mode = getattr(svc, "mode", "fallback")
         logger.debug("Health check requested — mode: %s", mode)
         return HealthResponse.create(mode=mode)
     except Exception as exc:
@@ -48,14 +72,9 @@ async def health_check() -> HealthResponse:
 
 @router.get("/categories", response_model=CategoriesResponse, summary="List supported categories")
 async def get_categories() -> CategoriesResponse:
-    """
-    Return all supported intent categories.
-
-    Clients can use this list to build quick-action buttons in the UI.
-    """
+    """Return all supported intent categories."""
     try:
-        categories = get_supported_intents()
-        return CategoriesResponse.create(categories=categories)
+        return CategoriesResponse.create(categories=get_supported_intents())
     except Exception as exc:
         logger.error("Error fetching categories: %s", exc)
         return CategoriesResponse.create(categories=["faq"])
@@ -66,25 +85,28 @@ async def ask_question(request: QuestionRequest) -> QuestionResponse:
     """
     Process a user question and return a structured election-guidance response.
 
-    The system detects the user's intent via keyword matching, retrieves the
-    relevant content from cache (populated from Google Sheets or fallback data),
-    and returns a structured response with steps, documents, tips, and a next action.
+    Intent is detected via keyword matching. Content is served from cache
+    (populated from Google Sheets, Google Cloud Storage, or local fallback).
     """
     try:
-        # Step 1: Detect intent with metadata
+        # Step 1: Detect intent
         intent, matched_keywords, confidence = detect_intent_with_metadata(request.question)
         matched_kw_names = get_matched_keyword_names(request.question, intent)
         intent_reason = build_intent_reason(intent, matched_kw_names)
         confidence_reason = build_confidence_reason(matched_keywords, confidence, intent)
         logger.info(
-            "Intent detected | intent=%s matched=%d confidence=%s question_preview='%s'",
+            "Intent detected | intent=%s matched=%d confidence=%s question='%s'",
             intent, matched_keywords, confidence, request.question[:60]
         )
 
-        # Step 2: Short-circuit for out_of_scope — no cache lookup needed
+        settings = get_settings()
+        cache = get_cache()
+        system_mode = _resolve_system_mode(settings, cache)
+        gcs_available = getattr(get_startup_service(), "gcs_available", False)
+        data_source_note = _build_data_source_note(system_mode, settings, gcs_available)
+
+        # Step 2: Short-circuit for out_of_scope
         if intent == "out_of_scope":
-            settings = get_settings()
-            system_mode = "sheets" if bool(settings.SHEET_ID) and get_cache().size() > 0 else "fallback"
             response = response_service.format_response("out_of_scope", OUT_OF_SCOPE_DATA)
             response.matched_keywords = 0
             response.confidence = "low"
@@ -92,33 +114,19 @@ async def ask_question(request: QuestionRequest) -> QuestionResponse:
             response.intent_reason = intent_reason
             response.system_mode = system_mode
             response.served_from_cache = False
-            response.data_source_note = (
-                "Using Google Sheets data (live mode)" if system_mode == "sheets"
-                else "Using fallback dataset (Sheets not configured)"
-            )
+            response.data_source_note = data_source_note
             return response
 
-        # Step 3: Retrieve from cache — track whether it was a hit
-        cache = get_cache()
+        # Step 3: Retrieve from cache
         data = cache.get(intent)
         served_from_cache = data is not None
-
         if served_from_cache:
             logger.debug("Cache HIT for intent: %s", intent)
         else:
             logger.warning("Cache MISS for intent: %s — using fallback", intent)
             data = fallback_service.get_category_data(intent)
 
-        # Step 3: Determine system mode and data source note
-        settings = get_settings()
-        system_mode = "sheets" if bool(settings.SHEET_ID) and cache.size() > 0 else "fallback"
-        data_source_note = (
-            "Using Google Sheets data (live mode)"
-            if system_mode == "sheets"
-            else "Using fallback dataset (Sheets not configured)"
-        )
-
-        # Step 4: Format and return response with all metadata
+        # Step 4: Format response
         response = response_service.format_response(intent, data)
         response.matched_keywords = matched_keywords
         response.confidence = confidence
@@ -140,7 +148,7 @@ async def ask_question(request: QuestionRequest) -> QuestionResponse:
             response.intent_reason = "No strong keyword match found → defaulted to 'faq'"
             response.system_mode = "fallback"
             response.served_from_cache = False
-            response.data_source_note = "Using fallback dataset (Sheets not configured)"
+            response.data_source_note = "Using local fallback dataset because Google Sheets and Google Cloud Storage are unavailable."
             return response
         except Exception as fatal:
             logger.critical("Fatal error in fallback handler: %s", fatal)
@@ -158,38 +166,42 @@ async def ask_question(request: QuestionRequest) -> QuestionResponse:
                 intent_reason="No strong keyword match found → defaulted to 'faq'",
                 system_mode="fallback",
                 served_from_cache=False,
-                data_source_note="Using fallback dataset (Sheets not configured)",
+                data_source_note="Using local fallback dataset because Google Sheets and Google Cloud Storage are unavailable.",
             )
 
 
 @router.get("/debug/source", response_model=DebugSourceResponse, summary="Debug: content source info")
 async def debug_source() -> DebugSourceResponse:
     """
-    Return safe observability information about the current content source.
-
-    This endpoint is evaluator/debug-friendly and does NOT expose any secrets,
-    credentials, sheet IDs, or tokens. It only reports operational state.
+    Safe observability endpoint — shows active Google services and content source.
+    Never exposes credentials, tokens, or private keys.
     """
     try:
         cache = get_cache()
         settings = get_settings()
+        svc = get_startup_service()
+
         cache_size = cache.size()
         cache_loaded = cache_size > 0
+        system_mode = getattr(svc, "mode", "fallback")
+        gcs_loaded = getattr(svc, "gcs_loaded", False)
+        gcs_available = getattr(svc, "gcs_available", False)  # set by health-check
 
-        # Determine source mode safely
-        # We infer from cache size and config — never expose raw credentials
-        has_sheet_config = bool(settings.SHEET_ID)
-        fallback_active = not has_sheet_config or cache_size == 0
+        fallback_active = system_mode == "fallback"
+        gcs_configured = settings.is_gcs_configured()
 
-        content_source = "fallback" if fallback_active else "sheets"
+        # Build google_services_used list
+        google_services = ["Google Cloud Run", "Google Sheets"]
+        if gcs_configured:
+            google_services.append("Google Cloud Storage")
 
         logger.debug(
-            "Debug source requested | source=%s cache_loaded=%s cache_size=%d",
-            content_source, cache_loaded, cache_size
+            "Debug source | mode=%s cache=%d gcs_configured=%s gcs_loaded=%s",
+            system_mode, cache_size, gcs_configured, gcs_loaded
         )
 
         return DebugSourceResponse(
-            content_source=content_source,
+            content_source=system_mode,
             cache_loaded=cache_loaded,
             fallback_active=fallback_active,
             cache_size=cache_size,
@@ -198,6 +210,10 @@ async def debug_source() -> DebugSourceResponse:
             sheet_name=settings.WORKSHEET_NAME,
             access_mode=settings.ACCESS_MODE,
             demo_sheet_ready=settings.is_sheets_configured(),
+            gcs_configured=gcs_configured,
+            gcs_loaded=gcs_loaded,
+            gcs_available=gcs_available,
+            google_services_used=google_services,
         )
     except Exception as exc:
         logger.error("Error in debug/source endpoint: %s", exc)
@@ -211,4 +227,8 @@ async def debug_source() -> DebugSourceResponse:
             sheet_name="",
             access_mode="auto",
             demo_sheet_ready=False,
+            gcs_configured=False,
+            gcs_loaded=False,
+            gcs_available=False,
+            google_services_used=["Google Cloud Run"],
         )

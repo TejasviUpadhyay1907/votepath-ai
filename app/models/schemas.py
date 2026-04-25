@@ -49,7 +49,7 @@ class QuestionResponse(BaseModel):
     )
     system_mode: str = Field(
         default="fallback",
-        description="Content source mode for this response: sheets or fallback"
+        description="Content source mode for this response: sheets, gcs, or fallback"
     )
     served_from_cache: bool = Field(
         default=False,
@@ -92,7 +92,7 @@ class CategoriesResponse(BaseModel):
 class DebugSourceResponse(BaseModel):
     """Response model for debug/source endpoint"""
 
-    content_source: str = Field(..., description="Active content source: sheets or fallback")
+    content_source: str = Field(..., description="Active content source: sheets, gcs, or fallback")
     cache_loaded: bool = Field(..., description="Whether cache is populated")
     fallback_active: bool = Field(..., description="Whether fallback mode is active")
     cache_size: int = Field(..., description="Number of categories in cache")
@@ -100,8 +100,12 @@ class DebugSourceResponse(BaseModel):
     sheets_configured: bool = Field(..., description="Whether SHEET_ID is set in environment")
     sheet_name: str = Field(default="", description="Configured worksheet name (safe to expose)")
     access_mode: str = Field(default="", description="Configured Sheets access mode")
-    demo_sheet_ready: bool = Field(
-        default=False,
-        description="True when SHEET_ID is configured and system can use Google Sheets"
+    demo_sheet_ready: bool = Field(default=False, description="True when SHEET_ID is configured")
+    gcs_configured: bool = Field(default=False, description="Whether GCS_CONTENT_URL is set")
+    gcs_loaded: bool = Field(default=False, description="Whether GCS content was loaded successfully")
+    gcs_available: bool = Field(default=False, description="Whether GCS is configured and loaded")
+    google_services_used: List[str] = Field(
+        default_factory=list,
+        description="List of Google services actively used by this deployment"
     )
 

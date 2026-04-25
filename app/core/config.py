@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     # CORS — comma-separated allowed origins (empty = safe local defaults)
     FRONTEND_ORIGINS: str = ""
 
+    # Google Cloud Storage — public-read content URL (optional)
+    GCS_CONTENT_URL: Optional[str] = None
+
     # Performance Configuration
     CACHE_ENABLED: bool = True
     RESPONSE_TIMEOUT_MS: int = 500
@@ -56,6 +59,10 @@ class Settings(BaseSettings):
     def is_sheets_configured(self) -> bool:
         """Return True if Google Sheets is meaningfully configured."""
         return bool(self.SHEET_ID)
+
+    def is_gcs_configured(self) -> bool:
+        """Return True if GCS_CONTENT_URL is set."""
+        return bool(self.GCS_CONTENT_URL)
 
     def validate_config(self) -> bool:
         """Validate configuration settings."""

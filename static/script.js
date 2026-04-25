@@ -145,7 +145,12 @@ function renderResponse(data) {
   // Metadata strip
   const conf = data.confidence || 'low';
   metaConfidence.textContent = `${confidenceClass(conf)} ${conf} confidence`;
-  metaSource.textContent     = `📡 ${data.system_mode === 'sheets' ? 'Google Sheets' : 'Fallback data'}`;
+  const sourceLabel = data.system_mode === 'sheets'
+    ? '📊 Google Sheets'
+    : data.system_mode === 'gcs'
+      ? '☁️ Google Cloud Storage'
+      : '📁 Fallback data';
+  metaSource.textContent     = `📡 ${sourceLabel}`;
   metaCache.textContent      = data.served_from_cache ? '⚡ cached' : '🔄 live';
   metaReason.textContent     = data.confidence_reason || '';
 
