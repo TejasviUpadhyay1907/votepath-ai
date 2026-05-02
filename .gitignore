@@ -58,4 +58,8 @@ service_account.json
 
 # Generated / temporary files
 IMPLEMENTATION_SUMMARY.md
+NORMALIZATION_SUMMARY.md
+SHEET_NAME_FIX_SUMMARY.md
+TEST_ALIGNMENT_SUMMARY.md
 test_app.py
+*_SUMMARY.md
