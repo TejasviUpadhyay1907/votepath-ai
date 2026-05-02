@@ -112,21 +112,27 @@ class TestSheetsServiceParseRow:
         row = ["", "Title", "Overview", "Steps", "Docs", "Tips", "Next"]
         assert svc.parse_row(row) is None
 
-    def test_missing_title_returns_none(self, config_no_creds):
+    def test_missing_title_auto_repaired(self, config_no_creds):
+        """Missing title is now auto-repaired with defaults"""
         svc = SheetsService(config_no_creds)
         row = ["registration", "", "Overview", "Steps", "Docs", "Tips", "Next"]
-        assert svc.parse_row(row) is None
-
-    def test_empty_optional_fields_become_defaults(self, config_no_creds):
-        svc = SheetsService(config_no_creds)
-        row = ["registration", "Title", "", "", "", "", ""]
         result = svc.parse_row(row)
         assert result is not None
-        assert result["overview"] == ""
-        assert result["steps"] == []
-        assert result["documents"] == []
-        assert result["tips"] == []
-        assert result["next_action"] == ""
+        assert result["title"] == "Voter Registration"  # Auto-repaired from defaults
+
+    def test_empty_optional_fields_become_defaults(self, config_no_creds):
+        """Empty optional fields are repaired with defaults"""
+        svc = SheetsService(config_no_creds)
+        # Steps must have at least one value
+        row = ["registration", "Title", "", "Step 1", "", "", ""]
+        result = svc.parse_row(row)
+        assert result is not None
+        assert result["overview"] == "How to register as a voter"  # Auto-repaired from defaults
+        assert result["steps"] == ["Step 1"]
+        # Documents, tips, next_action are repaired by _repair_row_with_defaults
+        assert result["documents"] == ["Aadhaar Card", "Address Proof", "Identity Proof"]  # Repaired
+        assert "Use official portal only" in result["tips"]  # Repaired
+        assert result["next_action"] == "Apply for voter registration"  # Repaired
 
     def test_pipe_separated_values_split_correctly(self, config_no_creds):
         svc = SheetsService(config_no_creds)
@@ -159,6 +165,7 @@ class TestSheetsServiceLoadData:
         assert result == {}
 
     def test_load_data_skips_invalid_rows(self, config_public):
+        """Should skip invalid rows and auto-create missing required categories"""
         svc = SheetsService(config_public)
         svc._initialized = True
 
@@ -170,6 +177,12 @@ class TestSheetsServiceLoadData:
             ["category", "title", "overview", "steps", "documents", "tips", "next_action"],
             ["registration", "Reg Title", "Overview", "S1|S2", "D1", "T1", "Next"],
             ["", "No Category", "Overview", "", "", "", ""],  # invalid — no category
+            ["documents", "Documents", "Required docs", "S1", "D1", "T1", "Next"],
+            ["correction", "Correction", "Fix details", "S1", "D1", "T1", "Next"],
+            ["status_check", "Status", "Check status", "S1", "D1", "T1", "Next"],
+            ["polling_day", "Polling Day", "Vote day", "S1", "D1", "T1", "Next"],
+            ["timeline", "Timeline", "Important dates", "S1", "D1", "T1", "Next"],
+            ["faq", "FAQ", "Frequently asked questions", "S1", "D1", "T1", "Next"],
         ]
 
         spreadsheet = MagicMock()
@@ -179,4 +192,6 @@ class TestSheetsServiceLoadData:
 
         result = svc.load_data()
         assert "registration" in result
-        assert len(result) == 1  # invalid row skipped
+        # Should have all 8 required categories (7 from sheet + 1 auto-created first_time_voter)
+        assert len(result) == 8
+        assert all(cat in result for cat in ["first_time_voter", "registration", "documents", "correction", "status_check", "polling_day", "timeline", "faq"])

@@ -186,6 +186,7 @@ async def debug_source() -> DebugSourceResponse:
         system_mode = getattr(svc, "mode", "fallback")
         gcs_loaded = getattr(svc, "gcs_loaded", False)
         gcs_available = getattr(svc, "gcs_available", False)  # set by health-check
+        sheets_repaired_rows = getattr(svc, "sheets_repaired_rows", 0)
 
         fallback_active = system_mode == "fallback"
         gcs_configured = settings.is_gcs_configured()
@@ -196,8 +197,8 @@ async def debug_source() -> DebugSourceResponse:
             google_services.append("Google Cloud Storage")
 
         logger.debug(
-            "Debug source | mode=%s cache=%d gcs_configured=%s gcs_loaded=%s",
-            system_mode, cache_size, gcs_configured, gcs_loaded
+            "Debug source | mode=%s cache=%d gcs_configured=%s gcs_loaded=%s repaired=%d",
+            system_mode, cache_size, gcs_configured, gcs_loaded, sheets_repaired_rows
         )
 
         return DebugSourceResponse(
@@ -213,6 +214,7 @@ async def debug_source() -> DebugSourceResponse:
             gcs_configured=gcs_configured,
             gcs_loaded=gcs_loaded,
             gcs_available=gcs_available,
+            sheets_repaired_rows=sheets_repaired_rows,
             google_services_used=google_services,
         )
     except Exception as exc:
@@ -230,5 +232,6 @@ async def debug_source() -> DebugSourceResponse:
             gcs_configured=False,
             gcs_loaded=False,
             gcs_available=False,
+            sheets_repaired_rows=0,
             google_services_used=["Google Cloud Run"],
         )

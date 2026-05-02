@@ -104,6 +104,7 @@ class DebugSourceResponse(BaseModel):
     gcs_configured: bool = Field(default=False, description="Whether GCS_CONTENT_URL is set")
     gcs_loaded: bool = Field(default=False, description="Whether GCS content was loaded successfully")
     gcs_available: bool = Field(default=False, description="Whether GCS is configured and loaded")
+    sheets_repaired_rows: int = Field(default=0, description="Number of rows auto-repaired during Sheets load")
     google_services_used: List[str] = Field(
         default_factory=list,
         description="List of Google services actively used by this deployment"

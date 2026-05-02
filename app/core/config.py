@@ -1,7 +1,7 @@
 """Configuration management for VotePath AI Backend"""
 
 from typing import Optional, List
-from pydantic import ConfigDict
+from pydantic import ConfigDict, Field
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
@@ -18,7 +18,7 @@ class Settings(BaseSettings):
 
     # Google Sheets Configuration
     SHEET_ID: Optional[str] = None
-    WORKSHEET_NAME: str = "VotePath_Data"
+    WORKSHEET_NAME: str = Field(default="VotePath_Data", validation_alias="SHEET_NAME")
     ACCESS_MODE: str = "auto"          # "auto", "public", "service_account"
     CREDENTIALS_PATH: Optional[str] = None
 

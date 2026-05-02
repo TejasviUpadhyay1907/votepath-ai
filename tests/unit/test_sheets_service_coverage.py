@@ -106,7 +106,7 @@ class TestLoadDataSuccess:
         return svc
 
     def test_load_data_full_success_path(self, config_public):
-        """load_data parses valid sheet rows and returns category dict"""
+        """load_data parses valid sheet rows and returns category dict with auto-created categories"""
         svc = self._make_initialized_svc(config_public)
 
         worksheet = MagicMock()
@@ -117,6 +117,11 @@ class TestLoadDataSuccess:
             ["category", "title", "overview", "steps", "documents", "tips", "next_action"],
             ["registration", "Reg Title", "Overview text", "S1|S2", "D1|D2", "T1", "Next action"],
             ["faq", "FAQ Title", "FAQ overview", "Q1|Q2", "", "Tip1", "Ask more"],
+            ["documents", "Documents", "Required docs", "S1", "D1", "T1", "Next"],
+            ["correction", "Correction", "Fix details", "S1", "D1", "T1", "Next"],
+            ["status_check", "Status", "Check status", "S1", "D1", "T1", "Next"],
+            ["polling_day", "Polling Day", "Vote day", "S1", "D1", "T1", "Next"],
+            ["timeline", "Timeline", "Important dates", "S1", "D1", "T1", "Next"],
         ]
 
         spreadsheet = MagicMock()
@@ -125,14 +130,15 @@ class TestLoadDataSuccess:
 
         result = svc.load_data()
 
-        assert "registration" in result
-        assert "faq" in result
+        # Should have all 8 required categories (7 from sheet + 1 auto-created first_time_voter)
+        assert len(result) == 8
+        assert all(cat in result for cat in ["first_time_voter", "registration", "documents", "correction", "status_check", "polling_day", "timeline", "faq"])
         assert result["registration"]["title"] == "Reg Title"
         assert result["registration"]["steps"] == ["S1", "S2"]
         assert result["registration"]["documents"] == ["D1", "D2"]
 
     def test_load_data_skips_invalid_rows(self, config_public):
-        """load_data skips rows with missing category/title"""
+        """load_data skips rows with missing category but auto-creates missing required categories"""
         svc = self._make_initialized_svc(config_public)
 
         worksheet = MagicMock()
@@ -142,8 +148,13 @@ class TestLoadDataSuccess:
         worksheet.get_all_values.return_value = [
             ["category", "title", "overview", "steps", "documents", "tips", "next_action"],
             ["registration", "Valid Title", "Overview", "S1", "D1", "T1", "Next"],
-            ["", "No Category", "Overview", "S1", "D1", "T1", "Next"],  # invalid
-            ["faq", "", "Overview", "S1", "D1", "T1", "Next"],           # invalid
+            ["", "No Category", "Overview", "S1", "D1", "T1", "Next"],  # invalid - skipped
+            ["faq", "FAQ", "Overview", "S1", "D1", "T1", "Next"],
+            ["documents", "Documents", "Required docs", "S1", "D1", "T1", "Next"],
+            ["correction", "Correction", "Fix details", "S1", "D1", "T1", "Next"],
+            ["status_check", "Status", "Check status", "S1", "D1", "T1", "Next"],
+            ["polling_day", "Polling Day", "Vote day", "S1", "D1", "T1", "Next"],
+            ["timeline", "Timeline", "Important dates", "S1", "D1", "T1", "Next"],
         ]
 
         spreadsheet = MagicMock()
@@ -151,8 +162,9 @@ class TestLoadDataSuccess:
         svc.client.open_by_key.return_value = spreadsheet
 
         result = svc.load_data()
-        assert len(result) == 1
-        assert "registration" in result
+        # Should have all 8 required categories (7 from sheet + 1 auto-created first_time_voter)
+        assert len(result) == 8
+        assert all(cat in result for cat in ["first_time_voter", "registration", "documents", "correction", "status_check", "polling_day", "timeline", "faq"])
 
     def test_load_data_worksheet_open_fails(self, config_public):
         """load_data returns empty dict when worksheet() raises"""
