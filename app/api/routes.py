@@ -13,6 +13,7 @@ Architecture:
 - Content delivery: Cached responses from Google Sheets/GCS/fallback
 - Transparency: All responses include metadata about confidence, intent reasoning, and data source
 - Resilience: Graceful fallback handling at every level
+- Google Cloud integration: Logging, Monitoring, Firestore for production analytics
 
 Response transparency features:
 - matched_keywords: Number of keywords that triggered the intent
@@ -24,6 +25,7 @@ Response transparency features:
 """
 
 import logging
+import time
 from fastapi import APIRouter
 from app.models.schemas import (
     QuestionRequest,
@@ -43,6 +45,8 @@ from app.services.intent_service import (
 from app.services.response_service import ResponseService
 from app.services.fallback_service import FallbackService
 from app.services.startup_service import get_startup_service
+from app.services.cloud_monitoring_service import get_cloud_monitoring_service
+from app.services.firestore_service import get_firestore_service
 from app.utils.cache import get_cache
 from app.core.config import get_settings
 
@@ -128,6 +132,57 @@ def _build_data_source_note(
     )
 
 
+def _record_metrics(
+    start_time: float,
+    intent: str,
+    confidence: str,
+    cache_hit: bool,
+    system_mode: str,
+    question: str
+) -> None:
+    """
+    Record metrics to Cloud Monitoring and Firestore.
+
+    Args:
+        start_time: Request start time
+        intent: Detected intent
+        confidence: Confidence level
+        cache_hit: Whether cache was hit
+        system_mode: Active data source mode
+        question: User's question
+    """
+    # Calculate response time
+    response_time_ms = (time.time() - start_time) * 1000
+
+    # Record to Cloud Monitoring
+    # WHY: Real-time metrics for dashboards and alerting
+    try:
+        monitoring = get_cloud_monitoring_service()
+        if monitoring.is_enabled():
+            monitoring.record_response_time(response_time_ms, intent)
+            monitoring.record_intent_detection(intent, confidence)
+            monitoring.record_cache_hit(cache_hit)
+            monitoring.record_data_source(system_mode)
+    except Exception as exc:
+        logger.debug("Failed to record monitoring metrics: %s", exc)
+
+    # Log to Firestore
+    # WHY: Query history for analytics and improvement
+    try:
+        firestore = get_firestore_service()
+        if firestore.is_enabled():
+            firestore.log_query(
+                question=question,
+                intent=intent,
+                confidence=confidence,
+                matched_keywords=0,  # Will be set by caller
+                response_time_ms=response_time_ms,
+                system_mode=system_mode
+            )
+    except Exception as exc:
+        logger.debug("Failed to log query to Firestore: %s", exc)
+
+
 @router.get("/", response_model=HealthResponse, summary="Health check")
 async def health_check() -> HealthResponse:
     """Health check — returns system status and operating mode."""
@@ -159,6 +214,9 @@ async def ask_question(request: QuestionRequest) -> QuestionResponse:
     Intent is detected via keyword matching. Content is served from cache
     (populated from Google Sheets, Google Cloud Storage, or local fallback).
     """
+    # Track request start time for metrics
+    start_time = time.time()
+
     try:
         # STEP 1: INTENT DETECTION
         # WHY: We need to understand what the user is asking about before we can
@@ -195,6 +253,10 @@ async def ask_question(request: QuestionRequest) -> QuestionResponse:
             response.system_mode = system_mode
             response.served_from_cache = False
             response.data_source_note = data_source_note
+
+            # Record metrics
+            _record_metrics(start_time, intent, confidence, False, system_mode, request.question)
+
             return response
 
         # STEP 4: RETRIEVE CONTENT FROM CACHE
@@ -222,6 +284,10 @@ async def ask_question(request: QuestionRequest) -> QuestionResponse:
         response.system_mode = system_mode
         response.served_from_cache = served_from_cache
         response.data_source_note = data_source_note
+
+        # Record metrics
+        _record_metrics(start_time, intent, confidence, served_from_cache, system_mode, request.question)
+
         return response
 
     except Exception as exc:
@@ -300,6 +366,15 @@ async def debug_source() -> DebugSourceResponse:
         google_services = ["Google Cloud Run", "Google Sheets"]
         if gcs_configured:
             google_services.append("Google Cloud Storage")
+
+        # Add Google Cloud services if enabled
+        # WHY: Show all active Google services for evaluation
+        if getattr(svc, "cloud_logging_enabled", False):
+            google_services.append("Google Cloud Logging")
+        if getattr(svc, "cloud_monitoring_enabled", False):
+            google_services.append("Google Cloud Monitoring")
+        if getattr(svc, "firestore_enabled", False):
+            google_services.append("Google Cloud Firestore")
 
         logger.debug(
             "Debug source | mode=%s cache=%d gcs_configured=%s gcs_loaded=%s repaired=%d",

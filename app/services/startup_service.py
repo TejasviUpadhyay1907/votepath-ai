@@ -13,6 +13,7 @@ Key features:
 - Health checking: Verifies GCS availability even when Sheets is active
 - Graceful degradation: Always provides basic functionality, even if all external sources fail
 - Transparent reporting: Tracks which source is active for debugging and monitoring
+- Google Cloud integration: Initializes Cloud Logging, Monitoring, and Firestore
 
 GCS is always health-checked during startup when configured,
 even if Sheets is the active source, so /debug/source can
@@ -21,11 +22,12 @@ truthfully report gcs_available = true.
 Example startup flow:
     1. Load configuration from environment
     2. Initialize logging system
-    3. Try Google Sheets → Success? Use it and health-check GCS
-    4. Sheets failed? Try GCS → Success? Use it
-    5. GCS failed? Use local fallback (always succeeds)
-    6. Populate cache with loaded data
-    7. Report startup summary
+    3. Initialize Google Cloud services (Logging, Monitoring, Firestore)
+    4. Try Google Sheets → Success? Use it and health-check GCS
+    5. Sheets failed? Try GCS → Success? Use it
+    6. GCS failed? Use local fallback (always succeeds)
+    7. Populate cache with loaded data
+    8. Report startup summary
 """
 
 import logging
@@ -35,6 +37,9 @@ from app.core.logging_config import setup_logging
 from app.services.sheets_service import SheetsService
 from app.services.gcs_service import GCSService
 from app.services.fallback_service import FallbackService
+from app.services.cloud_logging_service import get_cloud_logging_service
+from app.services.cloud_monitoring_service import get_cloud_monitoring_service
+from app.services.firestore_service import get_firestore_service
 from app.utils.cache import get_cache
 
 logger = logging.getLogger(__name__)
@@ -50,6 +55,9 @@ class StartupService:
         self.gcs_loaded: bool = False
         self.gcs_available: bool = False   # True if GCS URL is reachable and valid
         self.sheets_repaired_rows: int = 0  # Track auto-repaired rows
+        self.cloud_logging_enabled: bool = False
+        self.cloud_monitoring_enabled: bool = False
+        self.firestore_enabled: bool = False
 
     def _load_configuration(self) -> Settings:
         config = get_settings()
@@ -60,6 +68,43 @@ class StartupService:
     def _initialize_logging(self, config: Settings) -> None:
         setup_logging(config.LOG_LEVEL)
         logger.info("Logging initialized at %s level", config.LOG_LEVEL)
+
+    def _initialize_google_cloud_services(self) -> None:
+        """
+        Initialize Google Cloud services (Logging, Monitoring, Firestore).
+
+        WHY: These services enhance production monitoring and analytics.
+        They're optional and gracefully degrade if unavailable.
+        """
+        # Initialize Cloud Logging
+        # WHY: Centralized log management for all Cloud Run instances
+        try:
+            cloud_logging = get_cloud_logging_service()
+            self.cloud_logging_enabled = cloud_logging.initialize()
+            if self.cloud_logging_enabled:
+                logger.info("Google Cloud Logging enabled")
+        except Exception as exc:
+            logger.warning("Cloud Logging initialization failed: %s", exc)
+
+        # Initialize Cloud Monitoring
+        # WHY: Custom metrics for response time, intent distribution, etc.
+        try:
+            cloud_monitoring = get_cloud_monitoring_service()
+            self.cloud_monitoring_enabled = cloud_monitoring.initialize()
+            if self.cloud_monitoring_enabled:
+                logger.info("Google Cloud Monitoring enabled")
+        except Exception as exc:
+            logger.warning("Cloud Monitoring initialization failed: %s", exc)
+
+        # Initialize Firestore
+        # WHY: Query logging for analytics and improvement
+        try:
+            firestore = get_firestore_service()
+            self.firestore_enabled = firestore.initialize()
+            if self.firestore_enabled:
+                logger.info("Google Cloud Firestore enabled")
+        except Exception as exc:
+            logger.warning("Firestore initialization failed: %s", exc)
 
     def _attempt_sheets_load(self) -> Optional[Dict]:
         """Best-effort Google Sheets load. Returns data dict or None."""
@@ -193,6 +238,9 @@ class StartupService:
             "gcs_available": self.gcs_available,
             "cache_size": cache.size(),
             "sheets_repaired_rows": self.sheets_repaired_rows,
+            "cloud_logging_enabled": self.cloud_logging_enabled,
+            "cloud_monitoring_enabled": self.cloud_monitoring_enabled,
+            "firestore_enabled": self.firestore_enabled,
         }
 
     def _handle_startup_failure(self) -> dict:
@@ -232,17 +280,21 @@ class StartupService:
             # WHY: Logging must be ready before data loading so we can track issues
             self._initialize_logging(self.config)
 
-            # STEP 3: Load data with automatic fallback chain
+            # STEP 3: Initialize Google Cloud services
+            # WHY: Enable Cloud Logging, Monitoring, and Firestore for production
+            self._initialize_google_cloud_services()
+
+            # STEP 4: Load data with automatic fallback chain
             # WHY: This implements the resilience strategy - try best source first,
             # fall back to alternatives if needed, never fail to start
             data = self._load_data_with_fallback()
 
-            # STEP 4: Populate in-memory cache for fast response times
+            # STEP 5: Populate in-memory cache for fast response times
             # WHY: Cache eliminates repeated data lookups and ensures consistent
             # sub-500ms response times required by the performance criteria
             self._populate_cache(data)
 
-            # STEP 5: Build and log startup summary
+            # STEP 6: Build and log startup summary
             summary = self._build_summary()
             logger.info("Startup complete: %s", summary)
             return summary
