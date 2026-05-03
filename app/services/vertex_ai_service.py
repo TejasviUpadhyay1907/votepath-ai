@@ -71,7 +71,7 @@ class VertexAIService:
 
             # Initialize Vertex AI
             vertexai.init(project=self.project_id, location="us-central1")
-            
+
             # Initialize Gemini model (free tier)
             self.model = GenerativeModel("gemini-1.5-flash")
 
@@ -144,7 +144,7 @@ REASONING: [one sentence explanation]"""
             # Parse response
             text = response.text.strip()
             lines = text.split("\n")
-            
+
             validation = "uncertain"
             ai_confidence = confidence
             reasoning = "Unable to parse AI response"

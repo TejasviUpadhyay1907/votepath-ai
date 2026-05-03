@@ -51,8 +51,14 @@ class QuestionResponse(BaseModel):
     documents: List[str] = Field(default_factory=list, description="Required documents")
     tips: List[str] = Field(default_factory=list, description="Helpful tips")
     next_action: str = Field(default="", description="Recommended next action")
-    matched_keywords: int = Field(default=0, description="Number of keywords matched for intent detection")
-    confidence: str = Field(default="low", description="Detection confidence: high, medium, or low")
+    matched_keywords: int = Field(
+        default=0,
+        description="Number of keywords matched for intent detection"
+    )
+    confidence: str = Field(
+        default="low",
+        description="Detection confidence: high, medium, or low"
+    )
     confidence_reason: str = Field(
         default="",
         description="Short explanation of why the confidence level was assigned"
@@ -111,12 +117,21 @@ class DebugSourceResponse(BaseModel):
     fallback_active: bool = Field(..., description="Whether fallback mode is active")
     cache_size: int = Field(..., description="Number of categories in cache")
     app_version: str = Field(..., description="Application version")
-    sheets_configured: bool = Field(..., description="Whether SHEET_ID is set in environment")
-    sheet_name: str = Field(default="", description="Configured worksheet name (safe to expose)")
+    sheets_configured: bool = Field(
+        ..., description="Whether SHEET_ID is set in environment"
+    )
+    sheet_name: str = Field(
+        default="", description="Configured worksheet name (safe to expose)"
+    )
     access_mode: str = Field(default="", description="Configured Sheets access mode")
-    demo_sheet_ready: bool = Field(default=False, description="True when SHEET_ID is configured")
+    demo_sheet_ready: bool = Field(
+        default=False, description="True when SHEET_ID is configured"
+    )
     gcs_configured: bool = Field(default=False, description="Whether GCS_CONTENT_URL is set")
-    gcs_loaded: bool = Field(default=False, description="Whether GCS content was loaded successfully")
+    gcs_loaded: bool = Field(
+        default=False,
+        description="Whether GCS content was loaded successfully"
+    )
     gcs_available: bool = Field(default=False, description="Whether GCS is configured and loaded")
     sheets_repaired_rows: int = Field(default=0, description="Number of rows auto-repaired during Sheets load")
     google_services_used: List[str] = Field(

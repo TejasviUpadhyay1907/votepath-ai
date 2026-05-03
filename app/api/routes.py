@@ -275,7 +275,10 @@ async def ask_question(request: QuestionRequest) -> QuestionResponse:
             response.data_source_note = data_source_note
 
             # Record metrics
-            _record_metrics(start_time, intent, confidence, False, system_mode, request.question, matched_keywords)
+            _record_metrics(
+                start_time, intent, confidence, False,
+                system_mode, request.question, matched_keywords
+            )
 
             return response
 
@@ -306,7 +309,10 @@ async def ask_question(request: QuestionRequest) -> QuestionResponse:
         response.data_source_note = data_source_note
 
         # Record metrics
-        _record_metrics(start_time, intent, confidence, served_from_cache, system_mode, request.question, matched_keywords)
+        _record_metrics(
+            start_time, intent, confidence, served_from_cache,
+            system_mode, request.question, matched_keywords
+        )
 
         return response
 
@@ -361,7 +367,11 @@ async def ask_question(request: QuestionRequest) -> QuestionResponse:
             )
 
 
-@router.get("/debug/source", response_model=DebugSourceResponse, summary="Debug: content source info")
+@router.get(
+    "/debug/source",
+    response_model=DebugSourceResponse,
+    summary="Debug: content source info"
+)
 async def debug_source() -> DebugSourceResponse:
     """
     Safe observability endpoint — shows active Google services and content source.

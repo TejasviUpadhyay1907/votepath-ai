@@ -25,7 +25,7 @@ Free Tier:
 
 import logging
 import os
-from typing import Optional, Dict, List
+from typing import Optional, Dict
 from datetime import datetime, timezone
 
 # BigQuery is optional - gracefully degrade if not available
@@ -67,7 +67,7 @@ class BigQueryService:
         try:
             # Initialize BigQuery client
             self.client = bigquery.Client()
-            
+
             # Ensure dataset and table exist
             self._ensure_dataset_exists()
             self._ensure_table_exists()
@@ -115,7 +115,7 @@ class BigQueryService:
                 bigquery.SchemaField("response_time_ms", "FLOAT", mode="REQUIRED"),
                 bigquery.SchemaField("system_mode", "STRING", mode="REQUIRED"),
             ]
-            
+
             table = bigquery.Table(table_ref, schema=schema)
             self.client.create_table(table, exists_ok=True)
             logger.info("Created BigQuery table: %s", self.table_id)
@@ -145,7 +145,7 @@ class BigQueryService:
 
         try:
             table_ref = f"{self.client.project}.{self.dataset_id}.{self.table_id}"
-            
+
             rows_to_insert = [{
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "question": question[:500],  # Truncate for storage
@@ -157,7 +157,7 @@ class BigQueryService:
             }]
 
             errors = self.client.insert_rows_json(table_ref, rows_to_insert)
-            
+
             if errors:
                 logger.warning("BigQuery insert errors: %s", errors)
 
@@ -187,7 +187,7 @@ class BigQueryService:
                 ORDER BY count DESC
                 LIMIT {limit}
             """
-            
+
             results = self.client.query(query).result()
             return {row.intent: row.count for row in results}
 
@@ -211,11 +211,11 @@ class BigQueryService:
                 FROM `{self.client.project}.{self.dataset_id}.{self.table_id}`
                 WHERE timestamp >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 DAY)
             """
-            
+
             results = self.client.query(query).result()
             for row in results:
                 return float(row.avg_time) if row.avg_time else 0.0
-            
+
             return 0.0
 
         except Exception as exc:
