@@ -58,15 +58,30 @@ class Settings(BaseSettings):
         ]
 
     def is_sheets_configured(self) -> bool:
-        """Return True if Google Sheets is meaningfully configured."""
+        """
+        Check if Google Sheets is configured.
+
+        Returns:
+            bool: True if SHEET_ID is set
+        """
         return bool(self.SHEET_ID)
 
     def is_gcs_configured(self) -> bool:
-        """Return True if GCS_CONTENT_URL is set."""
+        """
+        Check if Google Cloud Storage is configured.
+
+        Returns:
+            bool: True if GCS_CONTENT_URL is set
+        """
         return bool(self.GCS_CONTENT_URL)
 
     def validate_config(self) -> bool:
-        """Validate configuration settings."""
+        """
+        Validate configuration settings.
+
+        Returns:
+            bool: True if all settings are valid
+        """
         if self.ACCESS_MODE not in ("auto", "public", "service_account"):
             return False
         if self.LOG_LEVEL.upper() not in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
@@ -98,5 +113,10 @@ class Settings(BaseSettings):
 
 @lru_cache()
 def get_settings() -> Settings:
-    """Get application settings singleton."""
+    """
+    Get application settings singleton.
+
+    Returns:
+        Settings: Cached settings instance
+    """
     return Settings()

@@ -75,14 +75,30 @@ class ResponseService:
 
     @staticmethod
     def _clean_str(value) -> str:
-        """Return a stripped string, or empty string for non-string values."""
+        """
+        Return a stripped string, or empty string for non-string values.
+
+        Args:
+            value: Value to clean
+
+        Returns:
+            str: Cleaned string or empty string
+        """
         if isinstance(value, str):
             return value.strip()
         return ""
 
     @staticmethod
     def _clean_list(value) -> List[str]:
-        """Return a list of non-empty stripped strings."""
+        """
+        Return a list of non-empty stripped strings.
+
+        Args:
+            value: Value to clean
+
+        Returns:
+            List[str]: List of cleaned strings
+        """
         if not isinstance(value, list):
             return []
         return [item.strip() for item in value if isinstance(item, str) and item.strip()]

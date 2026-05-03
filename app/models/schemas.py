@@ -18,7 +18,18 @@ class QuestionRequest(BaseModel):
     @field_validator('question')
     @classmethod
     def validate_question(cls, v: str) -> str:
-        """Validate and clean question input"""
+        """
+        Validate and clean question input.
+
+        Args:
+            v: Question string to validate
+
+        Returns:
+            str: Cleaned question string
+
+        Raises:
+            ValueError: If question is empty or too short
+        """
         cleaned = v.strip()
         if not cleaned:
             raise ValueError("Question cannot be empty")

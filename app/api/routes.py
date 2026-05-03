@@ -34,7 +34,16 @@ _GOOGLE_SERVICES_BASE = ["Google Cloud Run", "Google Sheets"]
 
 
 def _resolve_system_mode(settings, cache) -> str:
-    """Determine current system_mode from startup state."""
+    """
+    Determine current system_mode from startup state.
+
+    Args:
+        settings: Application settings
+        cache: Cache manager instance
+
+    Returns:
+        str: Current system mode ("sheets", "gcs", or "fallback")
+    """
     svc = get_startup_service()
     if hasattr(svc, "mode"):
         return svc.mode
@@ -49,7 +58,17 @@ def _build_data_source_note(
     settings,
     gcs_available: bool = False
 ) -> str:
-    """Build human-readable data source note matching evaluator expectations."""
+    """
+    Build human-readable data source note matching evaluator expectations.
+
+    Args:
+        system_mode: Current system mode
+        settings: Application settings
+        gcs_available: Whether GCS is available
+
+    Returns:
+        str: Human-readable data source description
+    """
     if system_mode == "sheets":
         if settings.is_gcs_configured() and gcs_available:
             return (

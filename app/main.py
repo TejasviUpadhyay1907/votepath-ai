@@ -21,7 +21,15 @@ RATE_LIMIT_WINDOW = 60  # seconds
 
 
 def check_rate_limit(client_ip: str) -> bool:
-    """Check if client has exceeded rate limit"""
+    """
+    Check if client has exceeded rate limit.
+
+    Args:
+        client_ip: Client IP address
+
+    Returns:
+        bool: True if request is allowed, False if rate limit exceeded
+    """
     now = time.time()
     # Clean old requests
     rate_limit_store[client_ip] = [
