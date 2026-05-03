@@ -10,4 +10,5 @@ google-cloud-logging==3.8.0
 google-cloud-monitoring==2.18.0
 google-cloud-firestore==2.14.0
 google-cloud-bigquery==3.14.0
+google-cloud-aiplatform==1.38.0
 requests==2.31.0

@@ -397,6 +397,8 @@ async def debug_source() -> DebugSourceResponse:
             google_services.append("Google Cloud Firestore")
         if getattr(svc, "bigquery_enabled", False):
             google_services.append("Google BigQuery")
+        if getattr(svc, "vertex_ai_enabled", False):
+            google_services.append("Google Vertex AI")
 
         logger.debug(
             "Debug source | mode=%s cache=%d gcs_configured=%s gcs_loaded=%s repaired=%d",
