@@ -2,7 +2,7 @@
 
 ## Current Status
 
-✅ **304 tests passing** | **90% coverage** | **0 failures** | **0 warnings**
+✅ **385 tests passing** | **90% coverage** | **0 failures** | **0 warnings**
 
 ---
 
@@ -31,7 +31,7 @@
 **Problem:** README showed stale information (178 tests, 81% coverage, old API examples).
 
 **Solution:**
-- Updated test count: **304 tests, 90% coverage**
+- Updated test count: **385 tests, 90% coverage**
 - Updated architecture diagram showing all 3 Google services
 - Added GCS setup instructions
 - Clarified data source priority with GCS health-check
@@ -75,7 +75,7 @@
 
 **Updated Tests:**
 - Fixed existing tests to work with 8-category minimum
-- All 304 tests now pass
+- All 385 tests now pass
 
 **Files Changed:**
 - `tests/unit/test_sheets_robustness.py` — NEW
@@ -243,7 +243,7 @@ gcloud run services update votepath-ai-backend \
 
 ## Verification Checklist
 
-- [ ] All 304 tests pass locally
+- [ ] All 385 tests pass locally
 - [ ] Docker image builds successfully
 - [ ] Cloud Run deployment succeeds
 - [ ] `/` returns `"status": "healthy"`
@@ -271,7 +271,7 @@ gcloud run services update votepath-ai-backend \
 **Improvements:**
 - ✅ Sheets loads successfully with robust fallback
 - ✅ GCS health-checked and available
-- ✅ README accurate (304 tests, 90% coverage)
+- ✅ README accurate (385 tests, 90% coverage)
 - ✅ All 3 Google services meaningfully used
 - ✅ Repo clean and professional
 - ✅ 12 new robustness tests
@@ -289,7 +289,7 @@ gcloud run services update votepath-ai-backend \
 1. **Sheets Robustness** — Handles worksheet name mismatches gracefully
 2. **GCS Health-Check** — Verifies backup even when Sheets is active
 3. **Minimum Category Validation** — Ensures quality data (≥8 categories)
-4. **Comprehensive Tests** — 304 tests, 90% coverage, 0 failures
+4. **Comprehensive Tests** — 385 tests, 90% coverage, 0 failures
 5. **Accurate Documentation** — README matches implementation exactly
 6. **Clean Repository** — No tool-generated noise
 7. **Deterministic Behavior** — No LLM dependencies, always reliable

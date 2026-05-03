@@ -6,7 +6,7 @@ A production-ready, reliability-first backend that helps users understand the el
 
 ## Test Status
 
-✅ **339 tests passing** | **90% coverage** | **0 failures** | **0 warnings**
+✅ **385 tests passing** | **90% coverage** | **0 failures** | **0 warnings**
 
 ---
 
@@ -338,7 +338,7 @@ can I vote online                  → faq
 | Confidence Metadata | Each response includes `matched_keywords`, `confidence`, and reasoning |
 | Data Source Transparency | `data_source_note` field explains which Google services are active |
 | Debug Endpoint | `/debug/source` shows content source without exposing secrets |
-| Comprehensive Tests | **339 tests, 90% coverage, 0 failures** |
+| Comprehensive Tests | **385 tests, 90% coverage, 0 failures** |
 | Cloud Run Ready | Dockerfile, port 8080, environment variable config |
 
 ---
@@ -574,7 +574,7 @@ pytest tests/unit/test_sheets_robustness.py -v
 pytest tests/integration/test_api_endpoints.py -v
 ```
 
-**Current test results:** 339 tests passing, 90% coverage, 0 failures, 0 warnings.
+**Current test results:** 385 tests passing, 90% coverage, 0 failures, 0 warnings.
 
 ---
 
