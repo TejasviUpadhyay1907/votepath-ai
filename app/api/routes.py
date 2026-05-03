@@ -27,6 +27,7 @@ Response transparency features:
 import logging
 import time
 from fastapi import APIRouter
+from fastapi.openapi.utils import get_openapi
 from app.models.schemas import (
     QuestionRequest,
     QuestionResponse,
@@ -203,7 +204,7 @@ def _record_metrics(
         logger.debug("Failed to log query to BigQuery: %s", exc)
 
 
-@router.get("/", response_model=HealthResponse, summary="Health check")
+@router.get("/", response_model=HealthResponse, summary="Health check", tags=["health"])
 async def health_check() -> HealthResponse:
     """Health check — returns system status and operating mode."""
     try:
@@ -216,7 +217,7 @@ async def health_check() -> HealthResponse:
         return HealthResponse.create(mode="fallback")
 
 
-@router.get("/categories", response_model=CategoriesResponse, summary="List supported categories")
+@router.get("/categories", response_model=CategoriesResponse, summary="List supported categories", tags=["metadata"])
 async def get_categories() -> CategoriesResponse:
     """Return all supported intent categories."""
     try:
@@ -226,7 +227,7 @@ async def get_categories() -> CategoriesResponse:
         return CategoriesResponse.create(categories=["faq"])
 
 
-@router.post("/ask", response_model=QuestionResponse, summary="Ask an election question")
+@router.post("/ask", response_model=QuestionResponse, summary="Ask an election question", tags=["questions"])
 async def ask_question(request: QuestionRequest) -> QuestionResponse:
     """
     Process a user question and return a structured election-guidance response.
@@ -370,7 +371,8 @@ async def ask_question(request: QuestionRequest) -> QuestionResponse:
 @router.get(
     "/debug/source",
     response_model=DebugSourceResponse,
-    summary="Debug: content source info"
+    summary="Debug: content source info",
+    tags=["debug"]
 )
 async def debug_source() -> DebugSourceResponse:
     """

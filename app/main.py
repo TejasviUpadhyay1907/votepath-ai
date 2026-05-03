@@ -82,8 +82,33 @@ async def lifespan(application: FastAPI):
 app = FastAPI(
     title="VotePath AI Backend",
     version="1.0.0",
-    description="Election Process Education Assistant – rule-based, deterministic, reliable.",
-    lifespan=lifespan
+    description=(
+        "Production-grade Election Process Education Assistant. "
+        "Provides reliable, deterministic election information using "
+        "keyword-based intent detection with comprehensive Google Cloud "
+        "integration including BigQuery analytics and Vertex AI capabilities."
+    ),
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_tags=[
+        {
+            "name": "health",
+            "description": "Health check and system status endpoints"
+        },
+        {
+            "name": "questions",
+            "description": "Question answering and intent detection"
+        },
+        {
+            "name": "metadata",
+            "description": "System metadata and configuration"
+        },
+        {
+            "name": "debug",
+            "description": "Debugging and observability endpoints"
+        }
+    ]
 )
 
 app.add_middleware(
