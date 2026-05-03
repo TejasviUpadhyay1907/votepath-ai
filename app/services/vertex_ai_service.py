@@ -200,13 +200,12 @@ REASONING: [one sentence explanation]"""
                 f'Question: "{question}"\n'
                 f"Intent: {intent}\n"
                 f'Original Response: "{response_text[:500]}"\n\n'
+                f"Provide a more natural, conversational version while:\n"
+                f"1. Keeping all factual information\n"
+                f"2. Making it easier to understand\n"
+                f"3. Being concise (max 3 sentences)\n"
+                f"4. Maintaining professional tone"
             )
-
-Provide a more natural, conversational version while:
-1. Keeping all factual information
-2. Making it easier to understand
-3. Being concise (max 3 sentences)
-4. Maintaining professional tone"""
 
             response = self.model.generate_content(
                 prompt,
