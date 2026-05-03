@@ -3,6 +3,12 @@
 import re
 from typing import Tuple, Optional, List
 
+from app.core.constants import (
+    MAX_QUESTION_LENGTH,
+    MIN_QUESTION_LENGTH,
+    MIN_ROW_COLUMNS,
+)
+
 
 def validate_question(question: str) -> Tuple[bool, Optional[str]]:
     """
@@ -24,8 +30,8 @@ def validate_question(question: str) -> Tuple[bool, Optional[str]]:
     if not cleaned:
         return False, "Question cannot be empty after removing whitespace"
 
-    if len(cleaned) > 500:
-        return False, "Question exceeds maximum length of 500 characters"
+    if len(cleaned) > MAX_QUESTION_LENGTH:
+        return False, f"Question exceeds maximum length of {MAX_QUESTION_LENGTH} characters"
 
     return True, None
 
@@ -40,9 +46,9 @@ def validate_sheet_row(row: List[str]) -> bool:
     Returns:
         bool: True if row is valid
     """
-    # Row must have at least 7 columns
+    # Row must have at least MIN_ROW_COLUMNS columns
     # (category, title, overview, steps, documents, tips, next_action)
-    if not row or len(row) < 7:
+    if not row or len(row) < MIN_ROW_COLUMNS:
         return False
 
     # Category and title are required (first two columns)

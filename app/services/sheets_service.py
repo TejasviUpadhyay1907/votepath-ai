@@ -4,8 +4,15 @@ import logging
 import csv
 import io
 from typing import Dict, Optional, List
+
 import requests
+
 from app.core.config import Settings
+from app.core.constants import (
+    REQUIRED_CATEGORIES,
+    MIN_ROW_COLUMNS,
+    SHEETS_TIMEOUT_SECONDS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -78,10 +85,7 @@ CATEGORY_DEFAULTS = {
     }
 }
 
-REQUIRED_CATEGORIES = [
-    "first_time_voter", "registration", "documents", "correction",
-    "status_check", "polling_day", "timeline", "faq"
-]
+# REQUIRED_CATEGORIES imported from constants
 
 GENERIC_DEFAULTS = {
     "title": "Election Information",

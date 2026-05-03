@@ -13,13 +13,12 @@ from fastapi.responses import FileResponse, JSONResponse
 from app.api.routes import router
 from app.services.startup_service import get_startup_service
 from app.core.config import get_settings
+from app.core.constants import RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW
 
 logger = logging.getLogger(__name__)
 
 # Simple in-memory rate limiter
 rate_limit_store = defaultdict(list)
-RATE_LIMIT_REQUESTS = 100  # requests
-RATE_LIMIT_WINDOW = 60  # seconds
 
 
 def check_rate_limit(client_ip: str) -> bool:

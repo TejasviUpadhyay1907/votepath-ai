@@ -5,14 +5,16 @@ from typing import List
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.core.constants import MAX_QUESTION_LENGTH, MIN_QUESTION_LENGTH
+
 
 class QuestionRequest(BaseModel):
     """Request model for asking a question"""
 
     question: str = Field(
         ...,
-        min_length=1,
-        max_length=500,
+        min_length=MIN_QUESTION_LENGTH,
+        max_length=MAX_QUESTION_LENGTH,
         description="User's question about the election process"
     )
 

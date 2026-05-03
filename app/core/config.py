@@ -6,6 +6,21 @@ from typing import Optional, List
 from pydantic import ConfigDict, Field
 from pydantic_settings import BaseSettings
 
+from app.core.constants import (
+    APP_NAME,
+    APP_VERSION,
+    DEFAULT_PORT,
+    DEFAULT_LOG_LEVEL,
+    DEFAULT_ENVIRONMENT,
+    DEFAULT_CACHE_ENABLED,
+    DEFAULT_RESPONSE_TIMEOUT_MS,
+    DEFAULT_CORS_ORIGINS,
+    VALID_ACCESS_MODES,
+    VALID_LOG_LEVELS,
+    MIN_PORT,
+    MAX_PORT,
+)
+
 
 class Settings(BaseSettings):
     """Application configuration settings"""
@@ -24,11 +39,11 @@ class Settings(BaseSettings):
     CREDENTIALS_PATH: Optional[str] = None
 
     # Application Configuration
-    APP_NAME: str = "VotePath AI Backend"
-    APP_VERSION: str = "1.0.0"
-    PORT: int = 8080
-    LOG_LEVEL: str = "INFO"
-    ENVIRONMENT: str = "production"  # "production", "development", "test"
+    APP_NAME: str = APP_NAME
+    APP_VERSION: str = APP_VERSION
+    PORT: int = DEFAULT_PORT
+    LOG_LEVEL: str = DEFAULT_LOG_LEVEL
+    ENVIRONMENT: str = DEFAULT_ENVIRONMENT
 
     # CORS — comma-separated allowed origins (empty = safe local defaults)
     FRONTEND_ORIGINS: str = ""
@@ -37,8 +52,8 @@ class Settings(BaseSettings):
     GCS_CONTENT_URL: Optional[str] = None
 
     # Performance Configuration
-    CACHE_ENABLED: bool = True
-    RESPONSE_TIMEOUT_MS: int = 500
+    CACHE_ENABLED: bool = DEFAULT_CACHE_ENABLED
+    RESPONSE_TIMEOUT_MS: int = DEFAULT_RESPONSE_TIMEOUT_MS
 
     # ── helpers ──────────────────────────────────────────────────
 
@@ -51,12 +66,7 @@ class Settings(BaseSettings):
         """
         if self.FRONTEND_ORIGINS.strip():
             return [o.strip() for o in self.FRONTEND_ORIGINS.split(",") if o.strip()]
-        return [
-            "http://localhost:8080",
-            "http://127.0.0.1:8080",
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-        ]
+        return DEFAULT_CORS_ORIGINS
 
     def is_sheets_configured(self) -> bool:
         """
@@ -83,11 +93,11 @@ class Settings(BaseSettings):
         Returns:
             bool: True if all settings are valid
         """
-        if self.ACCESS_MODE not in ("auto", "public", "service_account"):
+        if self.ACCESS_MODE not in VALID_ACCESS_MODES:
             return False
-        if self.LOG_LEVEL.upper() not in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
+        if self.LOG_LEVEL.upper() not in VALID_LOG_LEVELS:
             return False
-        if not 1 <= self.PORT <= 65535:
+        if not MIN_PORT <= self.PORT <= MAX_PORT:
             return False
         return True
 
