@@ -193,11 +193,14 @@ REASONING: [one sentence explanation]"""
             return None
 
         try:
-            prompt = f"""You are an election information assistant. Make this response more natural and helpful while keeping all factual information.
-
-Question: "{question}"
-Intent: {intent}
-Original Response: "{response_text[:500]}"
+            prompt = (
+                f"You are an election information assistant. "
+                f"Make this response more natural and helpful "
+                f"while keeping all factual information.\n\n"
+                f'Question: "{question}"\n'
+                f"Intent: {intent}\n"
+                f'Original Response: "{response_text[:500]}"\n\n'
+            )
 
 Provide a more natural, conversational version while:
 1. Keeping all factual information
