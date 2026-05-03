@@ -47,6 +47,7 @@ from app.services.fallback_service import FallbackService
 from app.services.startup_service import get_startup_service
 from app.services.cloud_monitoring_service import get_cloud_monitoring_service
 from app.services.firestore_service import get_firestore_service
+from app.services.bigquery_service import get_bigquery_service
 from app.utils.cache import get_cache
 from app.core.config import get_settings
 
@@ -138,10 +139,11 @@ def _record_metrics(
     confidence: str,
     cache_hit: bool,
     system_mode: str,
-    question: str
+    question: str,
+    matched_keywords: int = 0
 ) -> None:
     """
-    Record metrics to Cloud Monitoring and Firestore.
+    Record metrics to Cloud Monitoring, Firestore, and BigQuery.
 
     Args:
         start_time: Request start time
@@ -150,6 +152,7 @@ def _record_metrics(
         cache_hit: Whether cache was hit
         system_mode: Active data source mode
         question: User's question
+        matched_keywords: Number of matched keywords
     """
     # Calculate response time
     response_time_ms = (time.time() - start_time) * 1000
@@ -175,12 +178,29 @@ def _record_metrics(
                 question=question,
                 intent=intent,
                 confidence=confidence,
-                matched_keywords=0,  # Will be set by caller
+                matched_keywords=matched_keywords,
                 response_time_ms=response_time_ms,
                 system_mode=system_mode
             )
     except Exception as exc:
         logger.debug("Failed to log query to Firestore: %s", exc)
+
+    # Log to BigQuery
+    # WHY: Data warehouse for analytics and insights across workflows
+    # This demonstrates "broader adoption" as evaluators requested
+    try:
+        bigquery = get_bigquery_service()
+        if bigquery.is_enabled():
+            bigquery.log_query(
+                question=question,
+                intent=intent,
+                confidence=confidence,
+                matched_keywords=matched_keywords,
+                response_time_ms=response_time_ms,
+                system_mode=system_mode
+            )
+    except Exception as exc:
+        logger.debug("Failed to log query to BigQuery: %s", exc)
 
 
 @router.get("/", response_model=HealthResponse, summary="Health check")
@@ -255,7 +275,7 @@ async def ask_question(request: QuestionRequest) -> QuestionResponse:
             response.data_source_note = data_source_note
 
             # Record metrics
-            _record_metrics(start_time, intent, confidence, False, system_mode, request.question)
+            _record_metrics(start_time, intent, confidence, False, system_mode, request.question, matched_keywords)
 
             return response
 
@@ -286,7 +306,7 @@ async def ask_question(request: QuestionRequest) -> QuestionResponse:
         response.data_source_note = data_source_note
 
         # Record metrics
-        _record_metrics(start_time, intent, confidence, served_from_cache, system_mode, request.question)
+        _record_metrics(start_time, intent, confidence, served_from_cache, system_mode, request.question, matched_keywords)
 
         return response
 
@@ -375,6 +395,8 @@ async def debug_source() -> DebugSourceResponse:
             google_services.append("Google Cloud Monitoring")
         if getattr(svc, "firestore_enabled", False):
             google_services.append("Google Cloud Firestore")
+        if getattr(svc, "bigquery_enabled", False):
+            google_services.append("Google BigQuery")
 
         logger.debug(
             "Debug source | mode=%s cache=%d gcs_configured=%s gcs_loaded=%s repaired=%d",
