@@ -1,4 +1,25 @@
-"""Application-wide constants and configuration values"""
+"""Application-wide constants and configuration values
+
+This module centralizes all magic numbers and strings used throughout the application.
+Extracting constants improves:
+- Maintainability: Change values in one place
+- Readability: Named constants are self-documenting
+- Consistency: Same values used everywhere
+- Testability: Easy to override for testing
+
+Constant categories:
+- Rate Limiting: Request limits and time windows
+- Validation: Input length limits and requirements
+- Timeouts: External service timeout values
+- Defaults: Fallback values for configuration
+- Categories: Required election information categories
+
+Usage:
+    from app.core.constants import MAX_QUESTION_LENGTH, RATE_LIMIT_REQUESTS
+
+    if len(question) > MAX_QUESTION_LENGTH:
+        raise ValueError(f"Question too long (max {MAX_QUESTION_LENGTH})")
+"""
 
 # Rate Limiting
 RATE_LIMIT_REQUESTS = 100  # Maximum requests per window

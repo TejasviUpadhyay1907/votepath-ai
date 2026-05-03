@@ -1,13 +1,31 @@
 """Startup orchestration service.
 
+This module manages the application startup sequence, implementing a resilient
+data loading strategy with automatic fallback:
+
 Data source priority:
-  1. Google Sheets  (primary)
-  2. Google Cloud Storage  (secondary)
-  3. Local fallback dataset  (always available)
+  1. Google Sheets  (primary) - Live, editable content for non-technical users
+  2. Google Cloud Storage  (secondary) - Reliable backup when Sheets unavailable
+  3. Local fallback dataset  (always available) - Ensures app never fails to start
+
+Key features:
+- Automatic fallback chain: Tries each source in order until one succeeds
+- Health checking: Verifies GCS availability even when Sheets is active
+- Graceful degradation: Always provides basic functionality, even if all external sources fail
+- Transparent reporting: Tracks which source is active for debugging and monitoring
 
 GCS is always health-checked during startup when configured,
 even if Sheets is the active source, so /debug/source can
 truthfully report gcs_available = true.
+
+Example startup flow:
+    1. Load configuration from environment
+    2. Initialize logging system
+    3. Try Google Sheets → Success? Use it and health-check GCS
+    4. Sheets failed? Try GCS → Success? Use it
+    5. GCS failed? Use local fallback (always succeeds)
+    6. Populate cache with loaded data
+    7. Report startup summary
 """
 
 import logging
@@ -132,27 +150,35 @@ class StartupService:
         Returns:
             Dict: Loaded data from best available source
         """
-        # Tier 1: Google Sheets
+        # TIER 1: Google Sheets (Primary Source)
+        # WHY: Sheets allows non-technical users to update content in real-time
+        # without code deployments. This is the preferred source for live data.
         sheets_data = self._attempt_sheets_load()
         if sheets_data:
             self.mode = "sheets"
             self.sheets_loaded = True
             logger.info("Operating in SHEETS mode")
 
-            # Health-check GCS in parallel path
+            # PARALLEL HEALTH CHECK: Verify GCS availability even when Sheets succeeds
+            # WHY: The /debug/source endpoint needs to report accurate GCS status
+            # for monitoring and debugging. This doesn't affect the active data source.
             if self.config.GCS_CONTENT_URL:
                 self._verify_gcs_availability()
 
             return sheets_data
 
-        # Tier 2: Google Cloud Storage
+        # TIER 2: Google Cloud Storage (Secondary Source)
+        # WHY: GCS provides a reliable backup when Sheets is unavailable
+        # (e.g., API quota exceeded, network issues, permission problems)
         gcs_data = self._attempt_gcs_load()
         if gcs_data:
             self.mode = "gcs"
             logger.info("Operating in GCS mode")
             return gcs_data
 
-        # Tier 3: Local fallback
+        # TIER 3: Local Fallback (Always Available)
+        # WHY: Ensures the application never fails to start, even if all
+        # external services are down. Provides basic election information.
         self.mode = "fallback"
         logger.info("Operating in FALLBACK mode")
         return self._load_fallback_data()
@@ -193,26 +219,44 @@ class StartupService:
             dict: Startup summary
         """
         try:
+            # STEP 1: Load and validate configuration from environment
+            # WHY: Configuration must be loaded first as all services depend on it
             self.config = self._load_configuration()
             logger.info(
                 "Starting %s v%s",
                 self.config.APP_NAME,
                 self.config.APP_VERSION
             )
+
+            # STEP 2: Initialize logging system
+            # WHY: Logging must be ready before data loading so we can track issues
             self._initialize_logging(self.config)
 
+            # STEP 3: Load data with automatic fallback chain
+            # WHY: This implements the resilience strategy - try best source first,
+            # fall back to alternatives if needed, never fail to start
             data = self._load_data_with_fallback()
+
+            # STEP 4: Populate in-memory cache for fast response times
+            # WHY: Cache eliminates repeated data lookups and ensures consistent
+            # sub-500ms response times required by the performance criteria
             self._populate_cache(data)
 
+            # STEP 5: Build and log startup summary
             summary = self._build_summary()
             logger.info("Startup complete: %s", summary)
             return summary
 
         except Exception as exc:
+            # CRITICAL ERROR HANDLING: If startup fails, attempt graceful degradation
+            # WHY: Application should never crash on startup - always provide
+            # at least basic functionality using fallback data
             logger.error("Critical error during startup: %s", exc)
             try:
                 return self._handle_startup_failure()
             except Exception as fatal:
+                # FATAL ERROR: Even fallback failed - this should never happen
+                # but we log it clearly for debugging
                 logger.critical("Fatal startup error: %s", fatal)
                 raise
 

@@ -1,4 +1,22 @@
-"""Intent detection service using keyword matching"""
+"""Intent detection service using keyword matching
+
+This module implements a deterministic, rule-based intent detection system
+for election-related queries. Unlike black-box AI systems, this approach is:
+- Transparent: Users can see which keywords triggered which intent
+- Predictable: Same input always produces same output
+- Auditable: Easy to verify and explain decisions
+- Fast: No external API calls or ML model inference
+
+The system uses a three-tier approach:
+1. Scope detection: Filter out non-election queries immediately
+2. Keyword matching: Count matches for each intent category
+3. Confidence scoring: Assign confidence based on match count
+
+Example usage:
+    >>> intent, matches, confidence = detect_intent_with_metadata("I'm 18, how do I register?")
+    >>> print(f"Intent: {intent}, Matches: {matches}, Confidence: {confidence}")
+    Intent: first_time_voter, Matches: 3, Confidence: high
+"""
 
 import re
 from typing import List, Dict, Tuple
@@ -65,13 +83,20 @@ def is_out_of_scope(normalized: str) -> bool:
     Returns:
         bool: True if the query should return out_of_scope response
     """
+    # Empty input is not out of scope - let it fall through to FAQ
     if not normalized:
         return False
 
+    # Check if query contains election-related terms
+    # WHY: Election context takes precedence - even if unrelated keywords exist,
+    # we should process the query if it mentions voting/registration/etc.
     has_election = any(kw in normalized for kw in ELECTION_DOMAIN_KEYWORDS)
     if has_election:
         return False  # Election context present — proceed normally
 
+    # Check for clearly unrelated topics (sports, entertainment, weather, etc.)
+    # WHY: This prevents wasting processing time on queries we cannot answer
+    # and provides immediate helpful guidance to redirect the user
     has_unrelated = any(kw in normalized for kw in OUT_OF_SCOPE_KEYWORDS)
     return has_unrelated
 
@@ -187,15 +212,22 @@ def detect_intent_with_metadata(question: str) -> Tuple[str, int, str]:
         - matched_keywords: number of keywords matched
         - confidence: "high" (>=3), "medium" (1-2), or "low" (0 → faq/out_of_scope)
     """
+    # Normalize input for consistent matching (lowercase, strip whitespace, remove punctuation)
     normalized = normalize_input(question)
 
+    # Handle empty input gracefully - default to FAQ
     if not normalized:
         return "faq", 0, "low"
 
-    # Scope guard — check before keyword scoring
+    # SCOPE GUARD: Check if query is about non-election topics before processing
+    # WHY: Saves processing time and provides immediate helpful redirection
+    # Example: "What's the weather?" should not go through intent detection
     if is_out_of_scope(normalized):
         return "out_of_scope", 0, "low"
 
+    # INTENT SCORING: Count keyword matches for each intent category
+    # WHY: More matches = stronger signal that user wants that specific information
+    # Example: "I'm 18 and want to register" matches both first_time_voter and registration
     scores: Dict[str, int] = {
         intent: score_intent(normalized, keywords)
         for intent, keywords in INTENT_KEYWORDS.items()
@@ -203,17 +235,24 @@ def detect_intent_with_metadata(question: str) -> Tuple[str, int, str]:
 
     max_score = max(scores.values())
 
+    # No keyword matches found - default to FAQ
     if max_score == 0:
         return "faq", 0, "low"
 
-    # Pick the first non-faq intent with the highest score
+    # INTENT SELECTION: Pick the most specific intent with highest score
+    # WHY: We prefer specific intents (registration, documents) over generic (faq)
+    # This ensures users get the most relevant information for their query
     best_intent = "faq"
     for intent, score in scores.items():
         if score == max_score and intent != "faq":
             best_intent = intent
             break
 
-    # Assign confidence tier
+    # CONFIDENCE ASSIGNMENT: Based on number of keyword matches
+    # WHY: More matches = more confident we understand user's intent
+    # - High (3+): Very clear intent, e.g., "I'm 18 first time voter need to register"
+    # - Medium (1-2): Some clarity, e.g., "how to vote"
+    # - Low (0): Unclear, defaulting to FAQ
     if max_score >= 3:
         confidence = "high"
     elif max_score >= 1:

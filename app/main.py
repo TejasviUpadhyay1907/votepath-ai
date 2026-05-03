@@ -32,15 +32,23 @@ def check_rate_limit(client_ip: str) -> bool:
         bool: True if request is allowed, False if rate limit exceeded
     """
     now = time.time()
-    # Clean old requests
+
+    # STEP 1: Clean expired request timestamps
+    # WHY: We use a sliding window approach - only requests within the last
+    # RATE_LIMIT_WINDOW seconds count toward the limit. This is more fair than
+    # fixed windows which can allow bursts at window boundaries.
     rate_limit_store[client_ip] = [
         req_time for req_time in rate_limit_store[client_ip]
         if now - req_time < RATE_LIMIT_WINDOW
     ]
-    # Check limit
+
+    # STEP 2: Check if limit exceeded
+    # WHY: Prevents abuse and ensures fair resource allocation across all users
     if len(rate_limit_store[client_ip]) >= RATE_LIMIT_REQUESTS:
         return False
-    # Add new request
+
+    # STEP 3: Record this request
+    # WHY: Add current timestamp so future requests can check against it
     rate_limit_store[client_ip].append(now)
     return True
 
@@ -48,13 +56,26 @@ def check_rate_limit(client_ip: str) -> bool:
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     """Application lifespan manager"""
+    # STARTUP PHASE
+    # WHY: FastAPI lifespan context ensures startup code runs once before
+    # accepting requests, and cleanup runs on shutdown. This is the proper
+    # place for data loading, cache population, and resource initialization.
     logger.info("Starting VotePath AI Backend...")
     startup_service = get_startup_service()
     summary = startup_service.initialize_application()
+
+    # Store startup state in app.state for access by endpoints
+    # WHY: Endpoints need to know which mode we're running in for accurate
+    # response metadata and debugging information
     application.state.startup_mode = summary["mode"]
     application.state.sheets_loaded = summary["sheets_loaded"]
     logger.info("Application ready in %s mode", summary['mode'])
+
+    # YIELD: Application runs and serves requests
     yield
+
+    # SHUTDOWN PHASE
+    # WHY: Clean logging for monitoring and debugging deployment issues
     logger.info("Shutting down VotePath AI Backend...")
 
 

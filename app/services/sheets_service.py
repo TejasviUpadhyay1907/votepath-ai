@@ -10,8 +10,6 @@ import requests
 from app.core.config import Settings
 from app.core.constants import (
     REQUIRED_CATEGORIES,
-    MIN_ROW_COLUMNS,
-    SHEETS_TIMEOUT_SECONDS,
 )
 
 logger = logging.getLogger(__name__)

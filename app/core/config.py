@@ -1,4 +1,32 @@
-"""Configuration management for VotePath AI Backend"""
+"""Configuration management for VotePath AI Backend
+
+This module handles all application configuration using Pydantic Settings.
+Configuration is loaded from environment variables with sensible defaults.
+
+Configuration sources (in order of precedence):
+1. Environment variables (highest priority)
+2. .env file (if present)
+3. Default values defined in this module
+
+Key configuration areas:
+- Google Sheets: SHEET_ID, WORKSHEET_NAME, ACCESS_MODE, CREDENTIALS_PATH
+- Google Cloud Storage: GCS_CONTENT_URL (optional backup)
+- Application: PORT, LOG_LEVEL, ENVIRONMENT
+- CORS: FRONTEND_ORIGINS (comma-separated list)
+- Performance: CACHE_ENABLED, RESPONSE_TIMEOUT_MS
+
+Access modes:
+- "auto": Automatically choose best available method (public > service_account > fallback)
+- "public": Use public sheet access (requires publicly readable sheet)
+- "service_account": Use service account credentials (requires CREDENTIALS_PATH)
+
+Example .env file:
+    SHEET_ID=1abc123...
+    WORKSHEET_NAME=VotePath_Data
+    ACCESS_MODE=auto
+    LOG_LEVEL=INFO
+    PORT=8080
+"""
 
 from functools import lru_cache
 from typing import Optional, List
@@ -64,6 +92,9 @@ class Settings(BaseSettings):
         If FRONTEND_ORIGINS is set, parse it as comma-separated values.
         Otherwise return safe local development defaults.
         """
+        # WHY: CORS configuration must be explicit for security. If FRONTEND_ORIGINS
+        # is set in environment, use those values. Otherwise, default to safe local
+        # development origins (localhost:8080, localhost:3000) for testing.
         if self.FRONTEND_ORIGINS.strip():
             return [o.strip() for o in self.FRONTEND_ORIGINS.split(",") if o.strip()]
         return DEFAULT_CORS_ORIGINS
@@ -108,13 +139,22 @@ class Settings(BaseSettings):
         Returns:
             str: "public", "service_account", or "fallback"
         """
+        # EXPLICIT PUBLIC MODE
+        # WHY: User explicitly wants public access (no authentication required)
+        # This is simpler but requires the sheet to be publicly readable
         if self.ACCESS_MODE == "public":
             return "public" if self.SHEET_ID else "fallback"
 
+        # EXPLICIT SERVICE ACCOUNT MODE
+        # WHY: User explicitly wants service account authentication
+        # This is more secure and allows private sheets, but requires credentials
         if self.ACCESS_MODE == "service_account":
             return "service_account" if (self.SHEET_ID and self.CREDENTIALS_PATH) else "fallback"
 
-        # auto — prefer public (simpler), then service account, then fallback
+        # AUTO MODE: Intelligent selection based on available configuration
+        # WHY: Prefer public (simpler, no credentials needed) if SHEET_ID is set.
+        # Fall back to service account if credentials are also available.
+        # This makes deployment easier - just set SHEET_ID for public sheets.
         if self.SHEET_ID:
             return "public"
         if self.SHEET_ID and self.CREDENTIALS_PATH:

@@ -1,4 +1,26 @@
-"""Response formatting service"""
+"""Response formatting service
+
+This module handles the transformation of raw data dictionaries into
+standardized QuestionResponse objects with proper validation and defaults.
+
+Key responsibilities:
+- Type safety: Ensures all fields are correctly typed
+- Completeness: Fills missing fields with sensible defaults
+- Consistency: Normalizes data from different sources (Sheets, GCS, fallback)
+- Robustness: Never returns null/undefined values that could break the frontend
+
+Data cleaning strategy:
+- Strings: Strip whitespace, handle None/empty gracefully
+- Lists: Filter out empty items, ensure all items are strings
+- Defaults: Provide helpful fallback values for missing data
+
+Example:
+    >>> service = ResponseService()
+    >>> raw_data = {"title": "  Voter Registration  ", "steps": ["Step 1", "", "Step 2"]}
+    >>> response = service.format_response("registration", raw_data)
+    >>> print(response.title)  # "Voter Registration" (cleaned)
+    >>> print(response.steps)  # ["Step 1", "Step 2"] (empty item removed)
+"""
 
 import logging
 from typing import Dict, List
@@ -24,6 +46,9 @@ class ResponseService:
         Returns:
             QuestionResponse: Fully populated response
         """
+        # EXTRACT AND CLEAN DATA FIELDS
+        # WHY: Data from external sources (Sheets, GCS) may have inconsistent formatting,
+        # extra whitespace, or unexpected types. Cleaning ensures consistent output.
         title = self._clean_str(data.get("title", ""))
         overview = self._clean_str(data.get("overview", ""))
         steps = self._clean_list(data.get("steps", []))
@@ -31,6 +56,9 @@ class ResponseService:
         tips = self._clean_list(data.get("tips", []))
         next_action = self._clean_str(data.get("next_action", ""))
 
+        # BUILD RESPONSE WITH SAFE DEFAULTS
+        # WHY: If any field is missing or empty, we provide sensible defaults
+        # rather than returning null/empty values that could break the frontend
         response = QuestionResponse(
             category=category or "faq",
             title=title or "Election Information",
@@ -43,6 +71,9 @@ class ResponseService:
             confidence="low",
         )
 
+        # FINAL VALIDATION PASS
+        # WHY: Double-check that all required fields are populated before returning
+        # This is defensive programming to catch any edge cases
         return self.ensure_complete_response(response)
 
     def ensure_complete_response(self, response: QuestionResponse) -> QuestionResponse:

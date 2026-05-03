@@ -1,4 +1,26 @@
-"""In-memory cache manager for response data"""
+"""In-memory cache manager for response data
+
+This module provides a thread-safe, in-memory cache for election response data.
+The cache is populated at startup from the best available data source and serves
+all subsequent requests without additional I/O.
+
+Design decisions:
+- Thread-safe: Uses threading.Lock for concurrent access in FastAPI's async environment
+- Simple: Plain dictionary for O(1) lookups - no expiration or eviction needed
+- Startup-populated: Loaded once at startup, never modified during runtime
+- Fast: Enables sub-500ms response times required by performance criteria
+
+Cache lifecycle:
+1. Startup: populate() called with data from Sheets/GCS/fallback
+2. Runtime: get() called for each /ask request (read-only)
+3. Testing: clear() available for test isolation
+
+Why in-memory cache?
+- Election data changes infrequently (not real-time)
+- Dataset is small (~8 categories, ~2KB each)
+- Eliminates external dependencies (Redis, Memcached)
+- Simplifies deployment and reduces latency
+"""
 
 import threading
 from typing import Dict, Optional
@@ -9,6 +31,9 @@ class CacheManager:
 
     def __init__(self):
         """Initialize cache with empty dictionary and lock"""
+        # WHY: Using a simple dict for O(1) lookups. Threading lock ensures
+        # thread-safety in FastAPI's async environment where multiple requests
+        # may access cache simultaneously.
         self._cache: Dict[str, Dict] = {}
         self._lock = threading.Lock()
 
@@ -20,6 +45,7 @@ class CacheManager:
             category: Intent category key
             data: Response data to cache
         """
+        # WHY: Lock prevents race conditions when multiple threads write simultaneously
         with self._lock:
             self._cache[category] = data
 
@@ -33,6 +59,8 @@ class CacheManager:
         Returns:
             Optional[Dict]: Cached data or None if not found
         """
+        # WHY: Lock ensures we don't read while another thread is writing
+        # Returns None for cache misses rather than raising exceptions
         with self._lock:
             return self._cache.get(category)
 
@@ -43,6 +71,8 @@ class CacheManager:
         Args:
             data: Dictionary mapping categories to response data
         """
+        # WHY: Bulk update is more efficient than individual set() calls
+        # Used at startup to load all categories at once from data source
         with self._lock:
             self._cache.update(data)
 
