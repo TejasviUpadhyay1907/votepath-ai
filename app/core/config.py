@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     APP_VERSION: str = "1.0.0"
     PORT: int = 8080
     LOG_LEVEL: str = "INFO"
+    ENVIRONMENT: str = "production"  # "production", "development", "test"
 
     # CORS — comma-separated allowed origins (empty = safe local defaults)
     FRONTEND_ORIGINS: str = ""

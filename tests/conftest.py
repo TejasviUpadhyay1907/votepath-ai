@@ -1,9 +1,13 @@
 """Pytest configuration and fixtures for VotePath AI Backend tests"""
 
 import pytest
+import os
 from typing import Dict
 from app.core.config import Settings
 from app.utils.cache import CacheManager
+
+# Set test environment before any imports
+os.environ["ENVIRONMENT"] = "test"
 
 
 @pytest.fixture
@@ -18,6 +22,7 @@ def test_config():
         APP_VERSION="1.0.0-test",
         PORT=8080,
         LOG_LEVEL="DEBUG",
+        ENVIRONMENT="test",
         CACHE_ENABLED=True,
         RESPONSE_TIMEOUT_MS=500
     )

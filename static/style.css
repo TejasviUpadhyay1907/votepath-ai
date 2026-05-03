@@ -177,6 +177,7 @@ main { flex: 1; padding: 40px 0 60px; display: flex; flex-direction: column; gap
 }
 
 .btn-primary:hover { background: var(--blue-bg); box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+.btn-primary:focus { outline: 3px solid var(--blue-light); outline-offset: 2px; }
 .btn-primary:active { transform: scale(.97); }
 .btn-primary:disabled { opacity: .6; cursor: not-allowed; transform: none; }
 
@@ -234,6 +235,11 @@ main { flex: 1; padding: 40px 0 60px; display: flex; flex-direction: column; gap
   border-color: var(--blue-light);
   color: var(--blue);
   transform: translateY(-1px);
+}
+
+.quick-btn:focus {
+  outline: 3px solid var(--blue-light);
+  outline-offset: 2px;
 }
 
 .quick-btn:active { transform: translateY(0); }
@@ -494,6 +500,7 @@ main { flex: 1; padding: 40px 0 60px; display: flex; flex-direction: column; gap
 }
 
 .btn-secondary:hover { background: var(--blue); color: #fff; transform: translateY(-1px); }
+.btn-secondary:focus { outline: 3px solid var(--blue-light); outline-offset: 2px; }
 .btn-secondary:active { transform: translateY(0); }
 
 /* ── Footer ───────────────────────────────────────────────── */
