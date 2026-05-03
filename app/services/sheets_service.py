@@ -170,7 +170,7 @@ class SheetsService:
 
         if repaired:
             self._repaired_rows += 1
-            logger.debug(f"Auto-repaired row for category: {category}")
+            logger.debug("Auto-repaired row for category: %s", category)
 
         return parsed
 
@@ -188,7 +188,7 @@ class SheetsService:
                     "next_action": defaults["next_action"]
                 }
                 self._repaired_rows += 1
-                logger.info(f"Auto-created missing category: {category}")
+                logger.info("Auto-created missing category: %s", category)
 
         return data
 
@@ -224,7 +224,7 @@ class SheetsService:
             return parsed
 
         except Exception as e:
-            logger.warning(f"Error parsing row: {e}")
+            logger.warning("Error parsing row: %s", e)
             return None
 
     def load_data(self) -> Dict[str, Dict]:
@@ -239,7 +239,7 @@ class SheetsService:
             # Use Google Sheets CSV export URL (works for public sheets)
             sheet_url = f"https://docs.google.com/spreadsheets/d/{self.config.SHEET_ID}/export?format=csv&gid=0"
 
-            logger.info(f"Fetching public sheet: {self.config.SHEET_ID}")
+            logger.info("Fetching public sheet: %s", self.config.SHEET_ID)
 
             response = requests.get(sheet_url, timeout=10)
             response.raise_for_status()
@@ -267,20 +267,23 @@ class SheetsService:
                     skipped += 1
 
             if skipped > 0:
-                logger.warning(f"Skipped {skipped} invalid rows")
+                logger.warning("Skipped %d invalid rows", skipped)
 
             # Ensure all required categories
             data = self._ensure_required_categories(data)
 
             if self._repaired_rows > 0:
-                logger.info(f"Auto-repaired {self._repaired_rows} rows/categories")
+                logger.info("Auto-repaired %d rows/categories", self._repaired_rows)
 
-            logger.info(f"Successfully loaded {len(data)} categories from Google Sheets")
+            logger.info(
+                "Successfully loaded %d categories from Google Sheets",
+                len(data)
+            )
             return data
 
         except requests.RequestException as e:
-            logger.warning(f"Failed to fetch sheet data: {e}")
+            logger.warning("Failed to fetch sheet data: %s", e)
             return {}
         except Exception as e:
-            logger.error(f"Unexpected error loading sheet data: {e}")
+            logger.error("Unexpected error loading sheet data: %s", e)
             return {}

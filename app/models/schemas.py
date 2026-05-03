@@ -1,8 +1,9 @@
 """Pydantic models for request/response validation"""
 
-from typing import List
-from pydantic import BaseModel, Field, field_validator
 from datetime import datetime, timezone
+from typing import List
+
+from pydantic import BaseModel, Field, field_validator
 
 
 class QuestionRequest(BaseModel):

@@ -1,9 +1,10 @@
 """Configuration management for VotePath AI Backend"""
 
+from functools import lru_cache
 from typing import Optional, List
+
 from pydantic import ConfigDict, Field
 from pydantic_settings import BaseSettings
-from functools import lru_cache
 
 
 class Settings(BaseSettings):
@@ -86,7 +87,7 @@ class Settings(BaseSettings):
             return False
         if self.LOG_LEVEL.upper() not in ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"):
             return False
-        if not (1 <= self.PORT <= 65535):
+        if not 1 <= self.PORT <= 65535:
             return False
         return True
 

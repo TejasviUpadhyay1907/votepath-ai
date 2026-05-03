@@ -1,6 +1,8 @@
 """Fallback data service for local content"""
 
+import copy
 from typing import Dict
+
 from app.data.fallback_content import FALLBACK_DATA
 
 
@@ -20,7 +22,6 @@ class FallbackService:
         Returns:
             Dict[str, Dict]: Complete fallback data mapping categories to responses
         """
-        import copy
         return copy.deepcopy(self._data)
 
     def get_category_data(self, category: str) -> Dict:

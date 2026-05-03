@@ -1,16 +1,18 @@
 """VotePath AI Backend - Main application entry point"""
 
 import logging
+import time
+from collections import defaultdict
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
+
 from app.api.routes import router
 from app.services.startup_service import get_startup_service
 from app.core.config import get_settings
-import time
-from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -45,14 +47,14 @@ def check_rate_limit(client_ip: str) -> bool:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(application: FastAPI):
     """Application lifespan manager"""
     logger.info("Starting VotePath AI Backend...")
     startup_service = get_startup_service()
     summary = startup_service.initialize_application()
-    app.state.startup_mode = summary["mode"]
-    app.state.sheets_loaded = summary["sheets_loaded"]
-    logger.info(f"Application ready in {summary['mode']} mode")
+    application.state.startup_mode = summary["mode"]
+    application.state.sheets_loaded = summary["sheets_loaded"]
+    logger.info("Application ready in %s mode", summary['mode'])
     yield
     logger.info("Shutting down VotePath AI Backend...")
 
