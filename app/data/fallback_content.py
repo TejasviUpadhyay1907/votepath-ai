@@ -30,7 +30,7 @@ FALLBACK_DATA: Dict[str, Dict] = {
         ],
         "next_action": "Verify your voter registration status and locate your assigned polling station"
     },
-    
+
     "registration": {
         "title": "Voter Registration Process",
         "overview": "Registering to vote is the first step to participating in elections. The process is straightforward and can often be completed online, by mail, or in person.",
@@ -58,7 +58,7 @@ FALLBACK_DATA: Dict[str, Dict] = {
         ],
         "next_action": "Visit your local election office website or national voter registration portal to begin the registration process"
     },
-    
+
     "documents": {
         "title": "Required Identification Documents",
         "overview": "Different jurisdictions have varying ID requirements for voting. Understanding what documents you need will ensure a smooth voting experience.",
@@ -86,7 +86,7 @@ FALLBACK_DATA: Dict[str, Dict] = {
         ],
         "next_action": "Verify your ID meets local requirements and renew any expired documents"
     },
-    
+
     "correction": {
         "title": "Correcting Voter Registration Errors",
         "overview": "Mistakes in voter registration can happen. Whether it's a name change, address update, or other error, corrections can be made to ensure your information is accurate.",
@@ -114,7 +114,7 @@ FALLBACK_DATA: Dict[str, Dict] = {
         ],
         "next_action": "Contact your local election office or visit their website to access the registration correction form"
     },
-    
+
     "status_check": {
         "title": "Check Your Voter Registration Status",
         "overview": "Verifying your voter registration status ensures you're ready to vote on election day. Most jurisdictions offer online tools to check your status quickly.",
@@ -140,7 +140,7 @@ FALLBACK_DATA: Dict[str, Dict] = {
         ],
         "next_action": "Visit your state or national voter registration verification website to check your current status"
     },
-    
+
     "polling_day": {
         "title": "Polling Day Procedures",
         "overview": "Election day is when you cast your vote. Knowing what to expect at the polling station will help you vote confidently and efficiently.",
@@ -170,7 +170,7 @@ FALLBACK_DATA: Dict[str, Dict] = {
         ],
         "next_action": "Confirm your polling location, hours, and plan your trip to vote on election day"
     },
-    
+
     "timeline": {
         "title": "Election Timeline and Key Deadlines",
         "overview": "Elections follow a structured timeline with important deadlines for registration, early voting, and election day. Staying informed about these dates ensures you don't miss your opportunity to vote.",
@@ -197,7 +197,7 @@ FALLBACK_DATA: Dict[str, Dict] = {
         ],
         "next_action": "Visit your local election authority website to view the complete election calendar and mark all important dates"
     },
-    
+
     "faq": {
         "title": "Frequently Asked Questions",
         "overview": "Common questions about the voting process, registration, and election procedures. If you need specific information, try asking about registration, documents, polling day, or timelines.",

@@ -1,6 +1,6 @@
 """Pydantic models for request/response validation"""
 
-from typing import List, Optional
+from typing import List
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime, timezone
 
@@ -109,4 +109,3 @@ class DebugSourceResponse(BaseModel):
         default_factory=list,
         description="List of Google services actively used by this deployment"
     )
-

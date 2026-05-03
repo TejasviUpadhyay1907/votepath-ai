@@ -44,17 +44,30 @@ def _resolve_system_mode(settings, cache) -> str:
     return "fallback"
 
 
-def _build_data_source_note(system_mode: str, settings, gcs_available: bool = False) -> str:
+def _build_data_source_note(
+    system_mode: str,
+    settings,
+    gcs_available: bool = False
+) -> str:
     """Build human-readable data source note matching evaluator expectations."""
     if system_mode == "sheets":
         if settings.is_gcs_configured() and gcs_available:
-            return "Powered by Google Sheets live data on Google Cloud Run with verified Google Cloud Storage backup."
+            return (
+                "Powered by Google Sheets live data on Google Cloud Run "
+                "with verified Google Cloud Storage backup."
+            )
         if settings.is_gcs_configured():
-            return "Powered by Google Sheets live data on Google Cloud Run; Google Cloud Storage backup configured but unavailable."
+            return (
+                "Powered by Google Sheets live data on Google Cloud Run; "
+                "Google Cloud Storage backup configured but unavailable."
+            )
         return "Powered by Google Sheets live data on Google Cloud Run."
     if system_mode == "gcs":
         return "Powered by Google Cloud Storage data on Google Cloud Run."
-    return "Using local fallback dataset because Google Sheets and Google Cloud Storage are unavailable."
+    return (
+        "Using local fallback dataset because Google Sheets and "
+        "Google Cloud Storage are unavailable."
+    )
 
 
 @router.get("/", response_model=HealthResponse, summary="Health check")
@@ -144,29 +157,47 @@ async def ask_question(request: QuestionRequest) -> QuestionResponse:
             response = response_service.format_response("faq", fallback_data)
             response.matched_keywords = 0
             response.confidence = "low"
-            response.confidence_reason = build_confidence_reason(0, "low", "faq")
-            response.intent_reason = "No strong keyword match found → defaulted to 'faq'"
+            response.confidence_reason = build_confidence_reason(
+                0, "low", "faq"
+            )
+            response.intent_reason = (
+                "No strong keyword match found → defaulted to 'faq'"
+            )
             response.system_mode = "fallback"
             response.served_from_cache = False
-            response.data_source_note = "Using local fallback dataset because Google Sheets and Google Cloud Storage are unavailable."
+            response.data_source_note = (
+                "Using local fallback dataset because Google Sheets and "
+                "Google Cloud Storage are unavailable."
+            )
             return response
         except Exception as fatal:
             logger.critical("Fatal error in fallback handler: %s", fatal)
             return QuestionResponse(
                 category="faq",
                 title="Election Information",
-                overview="We encountered an issue. Please try again or contact your local election office.",
+                overview=(
+                    "We encountered an issue. Please try again or contact "
+                    "your local election office."
+                ),
                 steps=[],
                 documents=[],
-                tips=["Visit your local election authority website for assistance."],
+                tips=[
+                    "Visit your local election authority website for "
+                    "assistance."
+                ],
                 next_action="Contact your local election office for help.",
                 matched_keywords=0,
                 confidence="low",
                 confidence_reason=build_confidence_reason(0, "low", "faq"),
-                intent_reason="No strong keyword match found → defaulted to 'faq'",
+                intent_reason=(
+                    "No strong keyword match found → defaulted to 'faq'"
+                ),
                 system_mode="fallback",
                 served_from_cache=False,
-                data_source_note="Using local fallback dataset because Google Sheets and Google Cloud Storage are unavailable.",
+                data_source_note=(
+                    "Using local fallback dataset because Google Sheets and "
+                    "Google Cloud Storage are unavailable."
+                ),
             )
 
 

@@ -303,4 +303,3 @@ def get_supported_intents() -> List[str]:
         List[str]: List of intent category names
     """
     return list(INTENT_KEYWORDS.keys())
-

@@ -74,15 +74,15 @@ async def rate_limit_middleware(request: Request, call_next):
     if settings.ENVIRONMENT == "test":
         response = await call_next(request)
         return response
-    
+
     client_ip = request.client.host if request.client else "unknown"
-    
+
     if not check_rate_limit(client_ip):
         return JSONResponse(
             status_code=429,
             content={"detail": "Rate limit exceeded. Please try again later."}
         )
-    
+
     response = await call_next(request)
     return response
 
@@ -114,4 +114,3 @@ async def serve_frontend():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host="0.0.0.0", port=8080, reload=False)
-
