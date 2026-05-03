@@ -61,5 +61,8 @@ IMPLEMENTATION_SUMMARY.md
 NORMALIZATION_SUMMARY.md
 SHEET_NAME_FIX_SUMMARY.md
 TEST_ALIGNMENT_SUMMARY.md
+FINAL_SCORE_REPORT.md
 test_app.py
 *_SUMMARY.md
+auto_fix_sheets.py
+setup_sheets_perfect.py
